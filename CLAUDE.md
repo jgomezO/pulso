@@ -4,6 +4,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 @AGENTS.md
 
+## Regla #0 — OBLIGATORIA: Usar skills de .claude/skills/
+
+SIEMPRE usar las skills locales del proyecto en `.claude/skills/` según el contexto de la tarea.
+Estas skills se activan automáticamente, NO necesitan invocación manual.
+
+| Skill | Cuándo usarla |
+|---|---|
+| **heroui-react** | Al crear o modificar componentes UI con HeroUI v3. Consultar docs del skill ANTES de implementar. |
+| **heroui-migration** | Al migrar patrones de HeroUI v2 a v3 o corregir usos deprecated. |
+| **frontend-design** | Al crear páginas, landing pages, dashboards o cualquier UI nueva que requiera diseño distintivo y producción. |
+| **brand-guidelines** | Al aplicar estilos de marca Anthropic a artefactos (colores, tipografía, identidad visual). |
+| **theme-factory** | Al estilizar slides, docs, reportes o artefactos con un tema visual. Hay 10 temas predefinidos. |
+| **webapp-testing** | Al testear la webapp con Playwright (screenshots, verificación de UI, debugging, browser logs). |
+| **skill-creator** | Al crear, mejorar, evaluar o optimizar skills. |
+
+### Reglas de uso:
+- Leer el SKILL.md correspondiente ANTES de ejecutar cualquier tarea que aplique
+- Para **heroui-react**: SIEMPRE consultar docs via `node scripts/get_component_docs.mjs <Component>` antes de usar un componente
+- Para **webapp-testing**: usar los scripts bundled como black boxes (`--help` primero)
+- Para **frontend-design**: seguir sus guidelines de tipografía, color y motion — NO usar fuentes genéricas (Inter, Arial, Roboto) en diseños nuevos creativos
+- NUNCA ignorar estas skills cuando el contexto aplica
+
 ## Build & Development Commands
 
 ```bash
