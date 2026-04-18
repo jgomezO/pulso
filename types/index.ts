@@ -1,0 +1,8 @@
+export type Tier = 'enterprise' | 'growth' | 'starter'
+export type HealthTrend = 'improving' | 'stable' | 'declining'
+export type RiskLevel = 'low' | 'medium' | 'high' | 'critical'
+export type EventType = 'support_ticket' | 'email' | 'meeting' | 'product_usage' | 'nps' | 'renewal'
+export type EventSource = 'intercom' | 'hubspot' | 'segment' | 'manual'
+export type Sentiment = 'positive' | 'neutral' | 'negative'
+export type IntegrationType = 'hubspot' | 'intercom' | 'slack' | 'segment'
+export type SummaryType = 'weekly_summary' | 'meeting_brief' | 'risk_alert'

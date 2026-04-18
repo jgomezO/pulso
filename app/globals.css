@@ -1,0 +1,11 @@
+@import "tailwindcss";
+@import "@heroui/react/styles";
+
+body {
+  font-family: "Inter", system-ui, sans-serif;
+  background-color: #F7F8FC;
+}
+
+* {
+  box-sizing: border-box;
+}
