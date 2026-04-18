@@ -87,7 +87,7 @@ export function TopBar({ userName, userEmail }: TopBarProps) {
       {/* Search — centered, max 560px */}
       <div ref={searchRef} className="relative w-full max-w-[560px]">
         <TextField value={query} onChange={handleSearch} aria-label="Búsqueda global">
-          <InputGroup variant="soft">
+          <InputGroup variant="secondary">
             <InputGroup.Prefix className="pl-3">
               <Icon icon={IconSearch} size={16} className="text-[#9CA3AF]" />
             </InputGroup.Prefix>
