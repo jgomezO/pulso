@@ -4,7 +4,6 @@ import type { AccountRepository } from '@/domain/account/AccountRepository'
 import type { EventRepository } from '@/domain/event/EventRepository'
 import { formatCurrency } from '@/lib/utils/format'
 import { formatDate } from '@/lib/utils/date'
-import { createServiceClient } from '@/infrastructure/db/supabase'
 
 export class GenerateAccountSummary {
   constructor(

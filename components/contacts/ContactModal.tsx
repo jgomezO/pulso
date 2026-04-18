@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { Button, TextField, Input, TextArea, Label } from '@heroui/react'
 import type { Contact } from '@/domain/contact/Contact'
 import { ROLE_TYPES, INFLUENCE_LEVELS, RELATIONSHIP_STATUSES } from '@/domain/contact/Contact'
@@ -50,11 +50,11 @@ export function ContactModal({ accountId, contact, onSaved, onClose }: ContactMo
   const [saving, setSaving]                     = useState(false)
   const [error, setError]                       = useState('')
 
-  // Sync champion with roleType
-  useEffect(() => {
-    if (roleType === 'champion') setIsChampion(true)
-    else setIsChampion(false)
-  }, [roleType])
+  // Derive champion from roleType during render instead of syncing via effect
+  const derivedIsChampion = roleType === 'champion'
+  if (isChampion !== derivedIsChampion) {
+    setIsChampion(derivedIsChampion)
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

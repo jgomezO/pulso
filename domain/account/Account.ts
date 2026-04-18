@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { Tier, HealthTrend, RiskLevel } from '@/types'
+// Types from @/types are used indirectly via the schema
 
 export const AccountSchema = z.object({
   id: z.string().uuid(),

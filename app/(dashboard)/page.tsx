@@ -7,7 +7,7 @@ import { IconChevronRight } from '@/lib/icons'
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import type { AccountTask } from '@/domain/task/AccountTask'
-import { formatDate, daysUntil } from '@/lib/utils/date'
+import { formatDate } from '@/lib/utils/date'
 import { formatCurrency } from '@/lib/utils/format'
 
 interface ActivePlan {
@@ -233,7 +233,6 @@ export default function HomePage() {
                     : score >= 70 ? 'bg-[#E8FAF0] text-[#22C55E]'
                     : score >= 40 ? 'bg-[#FEF3E8] text-[#F58C37]'
                     : 'bg-[#FEE8E8] text-[#EF4444]'
-                  const renewDays = daysUntil(acct.renewalDate)
 
                   return (
                     <div key={acct.id} className="flex items-start gap-3 py-3 border-b border-[#ECEEF5] last:border-0">

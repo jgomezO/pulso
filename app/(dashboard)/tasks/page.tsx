@@ -45,14 +45,21 @@ export default function TasksPage() {
 
   useEffect(() => {
     if (!userId) return
-    setIsLoading(true)
-    const p = new URLSearchParams({ userId, pageSize: '100' })
-    if (statusFilter)   p.set('status',   statusFilter)
-    if (priorityFilter) p.set('priority', priorityFilter)
-    fetch(`/api/tasks?${p}`)
-      .then(r => r.json())
-      .then(json => { setTasks(json.data ?? []); setIsLoading(false) })
-      .catch(() => setIsLoading(false))
+    let cancelled = false
+    void (async () => {
+      setIsLoading(true)
+      const p = new URLSearchParams({ userId, pageSize: '100' })
+      if (statusFilter)   p.set('status',   statusFilter)
+      if (priorityFilter) p.set('priority', priorityFilter)
+      try {
+        const r = await fetch(`/api/tasks?${p}`)
+        const json = await r.json()
+        if (!cancelled) { setTasks(json.data ?? []); setIsLoading(false) }
+      } catch {
+        if (!cancelled) setIsLoading(false)
+      }
+    })()
+    return () => { cancelled = true }
   }, [userId, statusFilter, priorityFilter])
 
   async function handleStatusChange(taskId: string, status: TaskStatus) {

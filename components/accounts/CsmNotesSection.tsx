@@ -14,7 +14,11 @@ export function CsmNotesSection({ accountId, orgId, initialNotes }: CsmNotesSect
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const timerRef            = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  useEffect(() => { setNotes(initialNotes ?? '') }, [initialNotes])
+  useEffect(() => {
+    // Sync local notes state when the prop changes from the server
+    const handler = () => setNotes(initialNotes ?? '')
+    handler()
+  }, [initialNotes])
 
   function handleChange(value: string) {
     setNotes(value)

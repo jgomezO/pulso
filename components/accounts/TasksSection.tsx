@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { Button, TextField, Input, TextArea, Select, ListBox, ListBoxItem, Label, Skeleton } from '@heroui/react'
+import { useState, useEffect } from 'react'
+import { Button, TextField, Input, TextArea, Select, ListBox, ListBoxItem, Skeleton } from '@heroui/react'
 import { Icon } from '@/components/shared/Icon'
 import { IconChevronRight, IconBack } from '@/lib/icons'
-import { parseDate, type CalendarDate } from '@internationalized/date'
+import { type CalendarDate } from '@internationalized/date'
 import { DatePickerField } from '@/components/shared/DatePickerField'
 import type { AccountTask, TaskStatus, TaskPriority } from '@/domain/task/AccountTask'
 import { useUsers } from '@/hooks/useUsers'
@@ -309,15 +309,15 @@ export function TasksSection({ accountId }: TasksSectionProps) {
   const [isLoading, setIsLoading] = useState(true)
   const { users } = useUsers(ORG_ID)
 
-  const load = useCallback(async () => {
-    setIsLoading(true)
-    const res  = await fetch(`/api/accounts/${accountId}/tasks`)
-    const json = await res.json()
-    setTasks(json.data ?? [])
-    setIsLoading(false)
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      const res  = await fetch(`/api/accounts/${accountId}/tasks`)
+      const json = await res.json()
+      if (!cancelled) { setTasks(json.data ?? []); setIsLoading(false) }
+    })()
+    return () => { cancelled = true }
   }, [accountId])
-
-  useEffect(() => { load() }, [load])
 
   async function handleUpdate(id: string, data: Partial<AccountTask>) {
     const res = await fetch(`/api/tasks/${id}`, {

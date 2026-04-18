@@ -2,13 +2,12 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { Button, Checkbox, Table } from '@heroui/react'
-import { transformRow, type MappedRow, type PulsoField } from '@/lib/import/csv'
+import { transformRow, type PulsoField } from '@/lib/import/csv'
 import { formatCurrency } from '@/lib/utils/format'
 
 const ORG_ID = process.env.NEXT_PUBLIC_ORG_ID ?? 'demo-org-id'
 
 interface ImportPreviewProps {
-  headers:      string[]
   rows:         Record<string, string>[]
   mapping:      Record<string, PulsoField>
   onImported:   (result: ImportResult) => void
@@ -21,16 +20,7 @@ export interface ImportResult {
   errors:   { row: number; name: string; message: string }[]
 }
 
-function downloadErrorCSV(errors: ImportResult['errors']) {
-  const lines = ['Row,Name,Error', ...errors.map(e => `${e.row},"${e.name.replace(/"/g, '""')}","${e.message.replace(/"/g, '""')}"`)]
-  const blob  = new Blob([lines.join('\n')], { type: 'text/csv' })
-  const url   = URL.createObjectURL(blob)
-  const a     = document.createElement('a')
-  a.href = url; a.download = 'import-errors.csv'; a.click()
-  URL.revokeObjectURL(url)
-}
-
-export function ImportPreview({ headers, rows, mapping, onImported, onBack }: ImportPreviewProps) {
+export function ImportPreview({ rows, mapping, onImported, onBack }: ImportPreviewProps) {
   const [existingDomains, setExistingDomains] = useState<Set<string>>(new Set())
   const [loadingDomains,  setLoadingDomains]  = useState(true)
   const [updateExisting,  setUpdateExisting]  = useState(false)

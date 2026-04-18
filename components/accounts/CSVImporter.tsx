@@ -303,7 +303,7 @@ export function CSVImporter() {
               </div>
               {!isNameMapped && (
                 <span className="inline-flex items-center gap-1 text-xs text-[#F58C37] bg-[#FEF3E8] px-2 py-1 rounded-lg font-medium">
-                  <Icon icon={IconWarning} size={12} /> Mapea el campo "Nombre"
+                  <Icon icon={IconWarning} size={12} /> Mapea el campo &quot;Nombre&quot;
                 </span>
               )}
             </div>
@@ -343,7 +343,6 @@ export function CSVImporter() {
             <p className="text-xs text-[#9CA3AF] mt-0.5">{rows.length} filas del CSV · Revisa antes de confirmar</p>
           </div>
           <ImportPreview
-            headers={headers}
             rows={rows}
             mapping={mapping}
             onImported={handleImported}

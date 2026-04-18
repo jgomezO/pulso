@@ -97,7 +97,7 @@ function MilestoneRow({
           isIconOnly
           size="sm"
          
-          onPress={e => { toggleMilestone() }}
+          onPress={() => { toggleMilestone() }}
           className={`w-5 h-5 min-w-0 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
             milestone.isCompleted ? 'bg-[#22C55E] border-[#22C55E]' : 'border-[#D1D5DB] hover:border-[#22C55E] bg-transparent'
           }`}
@@ -202,7 +202,7 @@ function MilestoneRow({
               variant="ghost"
               size="sm"
              
-              onPress={e => { setAddingTask(true) }}
+              onPress={() => { setAddingTask(true) }}
               className="text-xs text-[#9CA3AF] hover:text-[#4F6EF7] transition-colors mt-1 p-0 h-auto min-w-0"
             >
               + Tarea
@@ -225,7 +225,15 @@ export function PlanDetail({ plan, accountId, onPlanUpdated }: PlanDetailProps) 
     setLoading(false)
   }, [plan.id])
 
-  useEffect(() => { fetchDetail() }, [fetchDetail])
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      const res  = await fetch(`/api/plans/${plan.id}`)
+      const data = await res.json()
+      if (!cancelled) { setMilestones(data.milestones ?? []); setLoading(false) }
+    })()
+    return () => { cancelled = true }
+  }, [plan.id])
 
   async function handleTaskChanged() {
     const [planRes, detailRes] = await Promise.all([
