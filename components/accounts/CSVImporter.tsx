@@ -139,8 +139,8 @@ function FilePreview({ headers, rows, filename, onReset }: {
           <Table.Root>
             <Table.Content aria-label="File preview">
             <Table.Header>
-              {headers.map(h => (
-                <Table.Column key={h} className="text-left px-3 py-2 text-[10px] font-semibold text-[#9CA3AF] uppercase tracking-wider whitespace-nowrap border-b border-[#ECEEF5]">
+              {headers.map((h, idx) => (
+                <Table.Column key={h} isRowHeader={idx === 0} className="text-left px-3 py-2 text-[10px] font-semibold text-[#9CA3AF] uppercase tracking-wider whitespace-nowrap border-b border-[#ECEEF5]">
                   {h}
                 </Table.Column>
               ))}

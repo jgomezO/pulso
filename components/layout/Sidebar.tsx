@@ -1,8 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { usePathname } from 'next/navigation'
+import { useAuthContext } from '@/components/providers/AuthProvider'
+import { Icon } from '@/components/shared/Icon'
+import { IconLogout } from '@/lib/icons'
 
 const NAV_ITEMS = [
   {
@@ -69,14 +71,7 @@ interface SidebarProps {
 
 export function Sidebar({ open, onToggle }: SidebarProps) {
   const pathname = usePathname()
-  const router   = useRouter()
-
-  async function handleLogout() {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push('/login')
-    router.refresh()
-  }
+  const { signOut } = useAuthContext()
 
   return (
     <aside
@@ -152,15 +147,13 @@ export function Sidebar({ open, onToggle }: SidebarProps) {
 
       {/* Logout */}
       <button
-        onClick={handleLogout}
+        onClick={signOut}
         title={open ? undefined : 'Cerrar sesión'}
         className={`mx-2 h-9 rounded-xl flex items-center text-[#9CA3AF] hover:bg-[#F7F8FC] hover:text-[#6B7280] transition-[padding,background-color,color] duration-300 flex-shrink-0 ${
           open ? 'pl-2.5 pr-2.5' : 'pl-[14px] pr-[14px]'
         }`}
       >
-        <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-        </svg>
+        <Icon icon={IconLogout} size={20} />
         <span
           className={`text-sm font-medium whitespace-nowrap overflow-hidden transition-[opacity,max-width,margin] duration-300 ${
             open ? 'opacity-100 max-w-[200px] ml-3 delay-100' : 'opacity-0 max-w-0 ml-0'

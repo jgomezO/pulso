@@ -17,9 +17,14 @@ export async function createClient() {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
             )
-          } catch {}
+          } catch {
+            // setAll is called from Server Components where cookies can't be set.
+            // This can be ignored if middleware refreshes the session.
+          }
         },
       },
     }
   )
 }
+
+export { createClient as createSupabaseServerClient }

@@ -4,8 +4,12 @@ import { useState, useRef } from 'react'
 import { Button, TextField, Input, TextArea, Label } from '@heroui/react'
 import { parseDate, type CalendarDate } from '@internationalized/date'
 import { DatePickerField } from '@/components/shared/DatePickerField'
+import { Icon } from '@/components/shared/Icon'
+import { IconAI } from '@/lib/icons'
 import type { SuccessPlan, PlanTemplateType } from '@/domain/plan/SuccessPlan'
+import type { Account } from '@/domain/account/Account'
 import { PLAN_TEMPLATES } from '@/lib/plans/templates'
+import { GeneratePlanAIModal } from '@/components/plans/GeneratePlanAIModal'
 
 const TEMPLATE_CONFIG: Record<PlanTemplateType, { label: string; color: string; bgColor: string }> = {
   onboarding: { label: 'Onboarding',    color: 'text-[#22C55E]', bgColor: 'bg-[#E8FAF0]' },
@@ -17,13 +21,18 @@ const TEMPLATE_CONFIG: Record<PlanTemplateType, { label: string; color: string; 
 
 interface NewPlanModalProps {
   accountId: string
+  account?: Pick<Account, 'name' | 'healthScore' | 'renewalDate'> & {
+    contactCount?: number
+    eventCount?: number
+  }
   onCreated: (plan: SuccessPlan) => void
   onClose: () => void
 }
 
-export function NewPlanModal({ accountId, onCreated, onClose }: NewPlanModalProps) {
+export function NewPlanModal({ accountId, account, onCreated, onClose }: NewPlanModalProps) {
   const overlayRef  = useRef<HTMLDivElement>(null)
   const [step,         setStep]         = useState<'template' | 'details'>('template')
+  const [showAIModal,  setShowAIModal]  = useState(false)
   const [templateType, setTemplateType] = useState<PlanTemplateType | null>(null)
   const [title,        setTitle]        = useState('')
   const [objective,    setObjective]    = useState('')
@@ -74,6 +83,18 @@ export function NewPlanModal({ accountId, onCreated, onClose }: NewPlanModalProp
 
   const inputClass = 'w-full h-9 px-3 border border-[#ECEEF5] rounded-lg text-sm text-[#0F1117] bg-white focus:outline-none focus:border-[#4F6EF7] placeholder:text-[#9CA3AF]'
 
+  if (showAIModal && account) {
+    return (
+      <GeneratePlanAIModal
+        accountId={accountId}
+        account={account}
+        onCreated={onCreated}
+        onClose={onClose}
+        onBack={() => setShowAIModal(false)}
+      />
+    )
+  }
+
   return (
     <div
       ref={overlayRef}
@@ -114,6 +135,22 @@ export function NewPlanModal({ accountId, onCreated, onClose }: NewPlanModalProp
 
         {step === 'template' ? (
           <div className="p-5 space-y-2">
+            {/* AI Generation card */}
+            {account && (
+              <Button
+                onPress={() => setShowAIModal(true)}
+                className="w-full flex items-center gap-3 p-3 rounded-xl border border-[#4F6EF7]/30 bg-white hover:bg-[#F7F8FC] hover:border-[#4F6EF7]/60 transition-colors text-left h-auto justify-start"
+              >
+                <div className="w-8 h-8 rounded-lg bg-[#EEF1FE] flex items-center justify-center flex-shrink-0">
+                  <Icon icon={IconAI} size={16} className="text-[#4F6EF7]" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-[#0F1117]">Generar con AI</p>
+                  <p className="text-xs text-[#9CA3AF] mt-0.5">Claude analiza la cuenta y genera un plan personalizado</p>
+                </div>
+              </Button>
+            )}
+
             {([...PLAN_TEMPLATES, null] as (typeof PLAN_TEMPLATES[number] | null)[]).map((tmpl, i) => {
               if (tmpl === null) {
                 const cfg = TEMPLATE_CONFIG.custom
@@ -122,9 +159,9 @@ export function NewPlanModal({ accountId, onCreated, onClose }: NewPlanModalProp
                     key="custom"
                    
                     onPress={() => handleTemplateSelect('custom')}
-                    className="w-full flex items-start gap-3 p-3 rounded-xl border border-[#ECEEF5] hover:border-[#4F6EF7] hover:bg-[#F7F8FC] transition-colors text-left h-auto justify-start"
+                    className="w-full flex items-start gap-3 p-3 rounded-xl border border-[#ECEEF5] bg-white hover:border-[#4F6EF7] hover:bg-[#F7F8FC] transition-colors text-left h-auto justify-start"
                   >
-                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md flex-shrink-0 ${cfg.bgColor} ${cfg.color}`}>
+                    <span className={`text-[10px] font-semibold ${cfg.color}`}>
                       {cfg.label}
                     </span>
                     <div>
@@ -140,9 +177,9 @@ export function NewPlanModal({ accountId, onCreated, onClose }: NewPlanModalProp
                   key={i}
                  
                   onPress={() => handleTemplateSelect(tmpl.type)}
-                  className="w-full flex items-start gap-3 p-3 rounded-xl border border-[#ECEEF5] hover:border-[#4F6EF7] hover:bg-[#F7F8FC] transition-colors text-left h-auto justify-start"
+                  className="w-full flex items-start gap-3 p-3 rounded-xl border border-[#ECEEF5] bg-white hover:border-[#4F6EF7] hover:bg-[#F7F8FC] transition-colors text-left h-auto justify-start"
                 >
-                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md flex-shrink-0 mt-0.5 ${cfg.bgColor} ${cfg.color}`}>
+                  <span className={`text-[10px] font-semibold flex-shrink-0 mt-0.5 ${cfg.color}`}>
                     {cfg.label}
                   </span>
                   <div className="min-w-0">

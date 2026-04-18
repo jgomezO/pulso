@@ -166,4 +166,12 @@ export class SuccessPlanRepositorySupabase {
 
     await this.db.from('success_plans').update(patch).eq('id', planId)
   }
+
+  async delete(planId: string): Promise<void> {
+    // Delete tasks, milestones, then plan (order matters for FK constraints)
+    await this.db.from('account_tasks').delete().eq('plan_id', planId)
+    await this.db.from('plan_milestones').delete().eq('plan_id', planId)
+    const { error } = await this.db.from('success_plans').delete().eq('id', planId)
+    if (error) throw error
+  }
 }

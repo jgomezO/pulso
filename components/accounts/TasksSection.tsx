@@ -7,8 +7,10 @@ import { IconChevronRight, IconBack } from '@/lib/icons'
 import { type CalendarDate } from '@internationalized/date'
 import { DatePickerField } from '@/components/shared/DatePickerField'
 import type { AccountTask, TaskStatus, TaskPriority } from '@/domain/task/AccountTask'
+import type { SuccessPlan } from '@/domain/plan/SuccessPlan'
 import { useUsers } from '@/hooks/useUsers'
 import { formatDate } from '@/lib/utils/date'
+import { IconPlan } from '@/lib/icons'
 
 const ORG_ID = process.env.NEXT_PUBLIC_ORG_ID ?? ''
 
@@ -51,11 +53,13 @@ function Avatar({ name }: { name?: string }) {
 function TaskCard({
   task,
   users,
+  planName,
   onUpdate,
   onDelete,
 }: {
   task: AccountTask
   users: { id: string; name: string }[]
+  planName?: string
   onUpdate: (id: string, data: Partial<AccountTask>) => Promise<void>
   onDelete: (id: string) => Promise<void>
 }) {
@@ -108,6 +112,12 @@ function TaskCard({
               {priority.label}
             </span>
             <DueDateLabel dateStr={task.dueDate} />
+            {planName && (
+              <span className="inline-flex items-center gap-1 text-[10px] text-[#6C4EF2] bg-[#F0EEFF] px-1.5 py-0.5 rounded-md font-medium">
+                <Icon icon={IconPlan} size={10} />
+                {planName}
+              </span>
+            )}
           </div>
         </div>
 
@@ -306,15 +316,28 @@ interface TasksSectionProps {
 
 export function TasksSection({ accountId }: TasksSectionProps) {
   const [tasks,     setTasks]     = useState<AccountTask[]>([])
+  const [planMap,   setPlanMap]   = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(true)
   const { users } = useUsers(ORG_ID)
 
   useEffect(() => {
     let cancelled = false
     ;(async () => {
-      const res  = await fetch(`/api/accounts/${accountId}/tasks`)
-      const json = await res.json()
-      if (!cancelled) { setTasks(json.data ?? []); setIsLoading(false) }
+      const [tasksRes, plansRes] = await Promise.all([
+        fetch(`/api/accounts/${accountId}/tasks`),
+        fetch(`/api/accounts/${accountId}/plans`),
+      ])
+      const tasksJson = await tasksRes.json()
+      const plansJson = await plansRes.json()
+      if (!cancelled) {
+        setTasks(tasksJson.data ?? [])
+        const map: Record<string, string> = {}
+        for (const p of (plansJson.plans ?? []) as SuccessPlan[]) {
+          map[p.id] = p.title
+        }
+        setPlanMap(map)
+        setIsLoading(false)
+      }
     })()
     return () => { cancelled = true }
   }, [accountId])
@@ -374,6 +397,7 @@ export function TasksSection({ accountId }: TasksSectionProps) {
                   key={task.id}
                   task={task}
                   users={users}
+                  planName={task.planId ? planMap[task.planId] : undefined}
                   onUpdate={handleUpdate}
                   onDelete={handleDelete}
                 />

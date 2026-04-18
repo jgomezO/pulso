@@ -73,6 +73,13 @@ export {
   PlugConnection as IconIntegration,
   LogoSlack as IconSlack,
 
+  // Auth
+  ArrowRightFromSquare as IconLogout,
+
+  // Forms
+  FileDollar as IconContract,
+  PersonGear as IconAssignment,
+
   // Misc
   CircleInfo as IconInfo,
   FileArrowUp as IconUpload,

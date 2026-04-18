@@ -6,11 +6,9 @@ import { TopBar } from './TopBar'
 
 interface SidebarShellProps {
   children: React.ReactNode
-  userName: string
-  userEmail: string
 }
 
-export function SidebarShell({ children, userName, userEmail }: SidebarShellProps) {
+export function SidebarShell({ children }: SidebarShellProps) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -20,7 +18,7 @@ export function SidebarShell({ children, userName, userEmail }: SidebarShellProp
         className="transition-[margin-left] duration-300"
         style={{ marginLeft: open ? 220 : 64 }}
       >
-        <TopBar userName={userName} userEmail={userEmail} />
+        <TopBar />
         <main className="min-h-screen p-6">
           {children}
         </main>

@@ -119,7 +119,7 @@ export function ImportPreview({ rows, mapping, onImported, onBack }: ImportPrevi
         <Table.Root>
           <Table.Content aria-label="Import preview">
           <Table.Header>
-            <Table.Column className={thClass}>Estado</Table.Column>
+            <Table.Column isRowHeader className={thClass}>Estado</Table.Column>
             <Table.Column className={thClass}>Nombre</Table.Column>
             <Table.Column className={thClass}>Dominio</Table.Column>
             <Table.Column className={thClass}>Tier</Table.Column>

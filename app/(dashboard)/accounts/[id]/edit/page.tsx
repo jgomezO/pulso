@@ -28,13 +28,9 @@ export default function EditAccountPage({
   }
 
   return (
-    <div>
-      <div className="max-w-2xl">
-        <AccountForm
-          account={account}
-          onSuccess={(updated: Account) => router.push(`/accounts/${updated.id}`)}
-        />
-      </div>
-    </div>
+    <AccountForm
+      account={account}
+      onSuccess={(updated: Account) => router.push(`/accounts/${updated.id}`)}
+    />
   )
 }

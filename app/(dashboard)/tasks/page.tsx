@@ -149,7 +149,7 @@ export default function TasksPage() {
             <Table.Root>
               <Table.Content aria-label="Tasks table">
               <Table.Header>
-                <Table.Column className="text-left px-4 py-3 text-[10px] font-semibold text-[#9CA3AF] uppercase tracking-wider border-b border-[#ECEEF5]">Cuenta</Table.Column>
+                <Table.Column isRowHeader className="text-left px-4 py-3 text-[10px] font-semibold text-[#9CA3AF] uppercase tracking-wider border-b border-[#ECEEF5]">Cuenta</Table.Column>
                 <Table.Column className="text-left px-4 py-3 text-[10px] font-semibold text-[#9CA3AF] uppercase tracking-wider border-b border-[#ECEEF5]">Tarea</Table.Column>
                 <Table.Column className="text-left px-4 py-3 text-[10px] font-semibold text-[#9CA3AF] uppercase tracking-wider border-b border-[#ECEEF5]">Prioridad</Table.Column>
                 <Table.Column className="text-left px-4 py-3 text-[10px] font-semibold text-[#9CA3AF] uppercase tracking-wider border-b border-[#ECEEF5]">Vencimiento</Table.Column>

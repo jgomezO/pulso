@@ -12,12 +12,9 @@ export default async function DashboardLayout({
 
   if (!user) redirect('/login')
 
-  const userName = (user.user_metadata?.full_name as string | undefined) ?? user.email ?? 'Usuario'
-  const userEmail = user.email ?? ''
-
   return (
     <div className="min-h-screen bg-[#F7F8FC]">
-      <SidebarShell userName={userName} userEmail={userEmail}>
+      <SidebarShell>
         {children}
       </SidebarShell>
     </div>
