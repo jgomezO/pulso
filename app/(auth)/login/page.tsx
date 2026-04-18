@@ -1,5 +1,6 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Button, Alert } from '@heroui/react'
 import { useAuthContext } from '@/components/providers/AuthProvider'
@@ -15,7 +16,7 @@ function GoogleIcon() {
   )
 }
 
-export default function LoginPage() {
+function LoginContent() {
   const searchParams = useSearchParams()
   const hasError = searchParams.get('error') === 'auth'
   const { signInWithGoogle } = useAuthContext()
@@ -55,5 +56,13 @@ export default function LoginPage() {
         Al continuar, aceptas nuestros Términos de Servicio y Política de Privacidad.
       </p>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginContent />
+    </Suspense>
   )
 }
