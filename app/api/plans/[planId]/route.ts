@@ -76,3 +76,18 @@ export async function PATCH(
     return Response.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ planId: string }> }
+) {
+  try {
+    const { planId } = await params
+    const repo = new SuccessPlanRepositorySupabase()
+    await repo.delete(planId)
+    return Response.json({ ok: true })
+  } catch (err) {
+    console.error('DELETE /api/plans/[planId] error:', err)
+    return Response.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}

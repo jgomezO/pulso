@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import type { SuccessPlan } from '@/domain/plan/SuccessPlan'
+import type { Account } from '@/domain/account/Account'
 import { Icon } from '@/components/shared/Icon'
 import { IconChevronRight } from '@/lib/icons'
 import { PlanCard } from '@/components/plans/PlanCard'
@@ -10,9 +11,13 @@ import { NewPlanModal } from '@/components/plans/NewPlanModal'
 
 interface PlansSectionProps {
   accountId: string
+  account?: Pick<Account, 'name' | 'healthScore' | 'renewalDate'> & {
+    contactCount?: number
+    eventCount?: number
+  }
 }
 
-export function PlansSection({ accountId }: PlansSectionProps) {
+export function PlansSection({ accountId, account }: PlansSectionProps) {
   const [plans,     setPlans]     = useState<SuccessPlan[]>([])
   const [loading,   setLoading]   = useState(true)
   const [expanded,  setExpanded]  = useState<string | null>(null)
@@ -40,6 +45,11 @@ export function PlansSection({ accountId }: PlansSectionProps) {
 
   function handlePlanUpdated(updated: SuccessPlan) {
     setPlans(prev => prev.map(p => p.id === updated.id ? updated : p))
+  }
+
+  function handlePlanDeleted(planId: string) {
+    setPlans(prev => prev.filter(p => p.id !== planId))
+    setExpanded(null)
   }
 
   return (
@@ -94,6 +104,7 @@ export function PlansSection({ accountId }: PlansSectionProps) {
                   plan={plan}
                   accountId={accountId}
                   onPlanUpdated={handlePlanUpdated}
+                  onPlanDeleted={handlePlanDeleted}
                 />
               )}
             </div>
@@ -104,6 +115,7 @@ export function PlansSection({ accountId }: PlansSectionProps) {
       {showModal && (
         <NewPlanModal
           accountId={accountId}
+          account={account}
           onCreated={handleCreated}
           onClose={() => setShowModal(false)}
         />

@@ -60,7 +60,7 @@ export function AccountTable({ accounts, isLoading, onArchive }: AccountTablePro
       <Table.Root>
         <Table.Content aria-label="Accounts table">
         <Table.Header>
-          <Table.Column className="text-left px-4 py-3 text-[10px] font-semibold text-[#9CA3AF] uppercase tracking-wider border-b border-[#ECEEF5]">Cuenta</Table.Column>
+          <Table.Column isRowHeader className="text-left px-4 py-3 text-[10px] font-semibold text-[#9CA3AF] uppercase tracking-wider border-b border-[#ECEEF5]">Cuenta</Table.Column>
           <Table.Column className="text-left px-4 py-3 text-[10px] font-semibold text-[#9CA3AF] uppercase tracking-wider border-b border-[#ECEEF5]">Tier</Table.Column>
           <Table.Column className="text-left px-4 py-3 text-[10px] font-semibold text-[#9CA3AF] uppercase tracking-wider border-b border-[#ECEEF5]">ARR</Table.Column>
           <Table.Column className="text-left px-4 py-3 text-[10px] font-semibold text-[#9CA3AF] uppercase tracking-wider border-b border-[#ECEEF5]">Score</Table.Column>

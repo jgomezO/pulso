@@ -169,7 +169,17 @@ export default function AccountDetailPage({
             </div>
             {activeTab === 'timeline' && <AccountTimeline accountId={id} />}
             {activeTab === 'tasks'    && <TasksSection    accountId={id} />}
-            {activeTab === 'plans'    && <PlansSection    accountId={id} />}
+            {activeTab === 'plans'    && (
+              <PlansSection
+                accountId={id}
+                account={{
+                  name: account.name,
+                  healthScore: account.healthScore ?? null,
+                  renewalDate: account.renewalDate ?? null,
+                  contactCount: contacts.length,
+                }}
+              />
+            )}
           </div>
 
           {/* Right: Health + Contacts + CSM Notes */}

@@ -1,7 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Button, TextField, Input } from '@heroui/react'
+import { toast } from '@heroui/react'
+import { Icon } from '@/components/shared/Icon'
+import { IconDelete, IconWarning } from '@/lib/icons'
 import type { SuccessPlan, PlanMilestone } from '@/domain/plan/SuccessPlan'
 import type { AccountTask, TaskPriority } from '@/domain/task/AccountTask'
 import { formatDate } from '@/lib/utils/date'
@@ -17,10 +20,63 @@ interface MilestoneWithTasks extends PlanMilestone {
   tasks: AccountTask[]
 }
 
+// ── Delete confirmation dialog ───────────────────────────────────────────────
+
+function DeletePlanDialog({
+  planTitle,
+  taskCount,
+  onConfirm,
+  onCancel,
+}: {
+  planTitle: string
+  taskCount: number
+  onConfirm: () => void
+  onCancel: () => void
+}) {
+  const overlayRef = useRef<HTMLDivElement>(null)
+
+  return (
+    <div
+      ref={overlayRef}
+      className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4"
+      onClick={e => { if (e.target === overlayRef.current) onCancel() }}
+    >
+      <div className="bg-white rounded-[14px] border border-[#ECEEF5] w-full max-w-sm p-5">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-9 h-9 rounded-xl bg-[#FEE8E8] flex items-center justify-center flex-shrink-0">
+            <Icon icon={IconWarning} size={18} className="text-[#EF4444]" />
+          </div>
+          <h3 className="text-sm font-semibold text-[#0F1117]">Eliminar plan</h3>
+        </div>
+        <p className="text-sm text-[#6B7280] mb-1">
+          Se eliminará <span className="font-semibold text-[#0F1117]">{planTitle}</span> junto con sus milestones{taskCount > 0 && <> y <span className="font-semibold text-[#EF4444]">{taskCount} tarea{taskCount !== 1 ? 's' : ''}</span> asociada{taskCount !== 1 ? 's' : ''}</>}.
+        </p>
+        <p className="text-xs text-[#9CA3AF] mb-4">Esta acción no se puede deshacer.</p>
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="ghost"
+            onPress={onCancel}
+            className="h-9 px-4 border border-[#ECEEF5] text-[#6B7280] rounded-xl text-sm font-medium hover:border-[#9CA3AF] transition-colors"
+          >
+            Cancelar
+          </Button>
+          <Button
+            onPress={onConfirm}
+            className="h-9 px-4 bg-[#EF4444] text-white rounded-xl text-sm font-medium hover:bg-[#DC2626] transition-colors"
+          >
+            Eliminar plan
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 interface PlanDetailProps {
   plan:          SuccessPlan
   accountId:     string
   onPlanUpdated: (plan: SuccessPlan) => void
+  onPlanDeleted?: (planId: string) => void
 }
 
 function MilestoneRow({
@@ -214,9 +270,11 @@ function MilestoneRow({
   )
 }
 
-export function PlanDetail({ plan, accountId, onPlanUpdated }: PlanDetailProps) {
+export function PlanDetail({ plan, accountId, onPlanUpdated, onPlanDeleted }: PlanDetailProps) {
   const [milestones, setMilestones] = useState<MilestoneWithTasks[]>([])
   const [loading,    setLoading]    = useState(true)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const fetchDetail = useCallback(async () => {
     const res  = await fetch(`/api/plans/${plan.id}`)
@@ -246,6 +304,21 @@ export function PlanDetail({ plan, accountId, onPlanUpdated }: PlanDetailProps) 
     }
     void detailRes
   }
+
+  async function handleDelete() {
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/plans/${plan.id}`, { method: 'DELETE' })
+      if (!res.ok) { toast.danger('Error al eliminar el plan'); setDeleting(false); return }
+      toast.success('Plan eliminado')
+      onPlanDeleted?.(plan.id)
+    } catch {
+      toast.danger('Error de conexión')
+      setDeleting(false)
+    }
+  }
+
+  const totalTasks = milestones.reduce((sum, ms) => sum + ms.tasks.length, 0)
 
   if (loading) {
     return (
@@ -278,6 +351,31 @@ export function PlanDetail({ plan, accountId, onPlanUpdated }: PlanDetailProps) 
             onTaskChanged={handleTaskChanged}
           />
         ))
+      )}
+
+      {/* Delete plan */}
+      {onPlanDeleted && (
+        <div className="pt-2 mt-2 border-t border-[#ECEEF5] flex justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            isDisabled={deleting}
+            onPress={() => setShowDeleteDialog(true)}
+            className="text-xs text-[#9CA3AF] hover:text-[#EF4444] transition-colors min-w-0 h-7 px-2 gap-1"
+          >
+            <Icon icon={IconDelete} size={12} />
+            Eliminar plan
+          </Button>
+        </div>
+      )}
+
+      {showDeleteDialog && (
+        <DeletePlanDialog
+          planTitle={plan.title}
+          taskCount={totalTasks}
+          onConfirm={handleDelete}
+          onCancel={() => setShowDeleteDialog(false)}
+        />
       )}
     </div>
   )
