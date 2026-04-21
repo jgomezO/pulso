@@ -50,23 +50,26 @@ interface LogActivityInput {
 async function resolveAccountId(
   serviceClient: ReturnType<typeof createServiceClient>,
   accountId: string,
-  accountName: string
+  accountName: string,
+  orgId: string
 ): Promise<string> {
-  // If it looks like a valid UUID, verify it exists
+  // If it looks like a valid UUID, verify it exists within the org
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
   if (uuidRegex.test(accountId)) {
     const { data } = await serviceClient
       .from('accounts')
       .select('id')
       .eq('id', accountId)
+      .eq('org_id', orgId)
       .single()
     if (data) return data.id as string
   }
 
-  // Fallback: search by name (fuzzy)
+  // Fallback: search by name (fuzzy) within the org
   const { data } = await serviceClient
     .from('accounts')
     .select('id')
+    .eq('org_id', orgId)
     .ilike('name', `%${accountName}%`)
     .limit(1)
     .single()
@@ -78,14 +81,16 @@ async function resolveAccountId(
 async function executeToolCall(
   name: string,
   input: Record<string, unknown>,
-  serviceClient: ReturnType<typeof createServiceClient>
+  serviceClient: ReturnType<typeof createServiceClient>,
+  orgId: string
 ): Promise<{ success: boolean; result?: Record<string, unknown>; error?: string }> {
   try {
-    // Resolve the account ID for all tools
+    // Resolve the account ID for all tools (scoped to org)
     const accountId = await resolveAccountId(
       serviceClient,
       input.account_id as string,
-      input.account_name as string
+      input.account_name as string,
+      orgId
     )
 
     switch (name) {
@@ -244,7 +249,7 @@ Tienes herramientas para crear tareas, planes de éxito y registrar actividades.
           textBlocks.push(block.text)
         } else if (block.type === 'tool_use') {
           // Execute the tool
-          const toolResult = await executeToolCall(block.name, block.input as Record<string, unknown>, serviceClient)
+          const toolResult = await executeToolCall(block.name, block.input as Record<string, unknown>, serviceClient, profile.org_id)
 
           actions.push({
             tool: block.name,

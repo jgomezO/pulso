@@ -4,23 +4,30 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { User, Session } from '@supabase/supabase-js'
 
-interface UseAuthReturn {
+interface EnsureOrgResult {
+  orgId: string | null
+  needsOnboarding?: boolean
+}
+
+export interface UseAuthReturn {
   user: User | null
   session: Session | null
   loading: boolean
   orgId: string | null
+  needsOnboarding: boolean
   signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
+  setOrgId: (id: string) => void
 }
 
-async function fetchEnsureOrg(): Promise<string | null> {
+async function fetchEnsureOrg(): Promise<EnsureOrgResult> {
   try {
     const res = await fetch('/api/auth/ensure-org', { method: 'POST' })
-    if (!res.ok) return null
-    const data = await res.json() as { orgId: string }
-    return data.orgId
+    if (!res.ok) return { orgId: null }
+    const data = await res.json() as EnsureOrgResult
+    return data
   } catch {
-    return null
+    return { orgId: null }
   }
 }
 
@@ -29,6 +36,7 @@ export function useAuth(): UseAuthReturn {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [orgId, setOrgId] = useState<string | null>(null)
+  const [needsOnboarding, setNeedsOnboarding] = useState(false)
   const ensuredRef = useRef(false)
 
   useEffect(() => {
@@ -40,8 +48,9 @@ export function useAuth(): UseAuthReturn {
 
       if (currentSession?.user && !ensuredRef.current) {
         ensuredRef.current = true
-        const id = await fetchEnsureOrg()
-        setOrgId(id)
+        const result = await fetchEnsureOrg()
+        setOrgId(result.orgId)
+        setNeedsOnboarding(result.needsOnboarding === true)
       }
 
       setLoading(false)
@@ -55,12 +64,14 @@ export function useAuth(): UseAuthReturn {
 
       if (event === 'SIGNED_IN' && newSession?.user && !ensuredRef.current) {
         ensuredRef.current = true
-        const id = await fetchEnsureOrg()
-        setOrgId(id)
+        const result = await fetchEnsureOrg()
+        setOrgId(result.orgId)
+        setNeedsOnboarding(result.needsOnboarding === true)
       }
 
       if (event === 'SIGNED_OUT') {
         setOrgId(null)
+        setNeedsOnboarding(false)
         ensuredRef.current = false
       }
 
@@ -86,5 +97,10 @@ export function useAuth(): UseAuthReturn {
     window.location.href = '/login'
   }, [])
 
-  return { user, session, loading, orgId, signInWithGoogle, signOut }
+  const handleSetOrgId = useCallback((id: string) => {
+    setOrgId(id)
+    setNeedsOnboarding(false)
+  }, [])
+
+  return { user, session, loading, orgId, needsOnboarding, signInWithGoogle, signOut, setOrgId: handleSetOrgId }
 }

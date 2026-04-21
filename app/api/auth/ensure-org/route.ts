@@ -3,8 +3,9 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/infrastructure/db/supabase'
 
 interface EnsureOrgResponse {
-  orgId: string
+  orgId: string | null
   isNewUser: boolean
+  needsOnboarding?: boolean
 }
 
 export async function POST() {
@@ -73,36 +74,6 @@ export async function POST() {
     }
   }
 
-  // New user without invite: create organization + profile atomically via DB function
-  // This prevents race conditions where concurrent requests each create a separate org
-  const userName = (user.user_metadata?.full_name as string | undefined) ?? user.email ?? 'Usuario'
-  const orgName = `${userName} Org`
-  const orgSlug = `org-${user.id.slice(0, 8)}-${Date.now()}`
-
-  const { data: result, error: rpcError } = await serviceClient.rpc('ensure_user_org', {
-    p_user_id: user.id,
-    p_org_name: orgName,
-    p_org_slug: orgSlug,
-  })
-
-  if (rpcError || !result) {
-    console.error('ensure-org: rpc ensure_user_org failed', rpcError)
-    return NextResponse.json(
-      { error: 'Failed to ensure organization', details: rpcError?.message },
-      { status: 500 }
-    )
-  }
-
-  const orgId = result.org_id as string
-  const isNew = result.is_new as boolean
-
-  // Set org_id in JWT app_metadata so RLS policies can use it
-  if (user.app_metadata?.org_id !== orgId) {
-    await serviceClient.auth.admin.updateUserById(user.id, {
-      app_metadata: { ...user.app_metadata, org_id: orgId },
-    })
-  }
-
-  const response: EnsureOrgResponse = { orgId, isNewUser: isNew }
-  return NextResponse.json(response)
+  // New user without invite: needs onboarding to set org name
+  return NextResponse.json({ orgId: null, isNewUser: true, needsOnboarding: true })
 }

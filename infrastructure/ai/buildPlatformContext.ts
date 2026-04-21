@@ -50,28 +50,36 @@ export async function buildPlatformContext(
   serviceClient: SupabaseClient,
   orgId: string
 ): Promise<string> {
-  const [accountsRes, tasksRes, eventsRes] = await Promise.all([
-    serviceClient
-      .from('accounts')
-      .select('id, name, domain, arr, tier, health_score, health_trend, risk_level, renewal_date, csm_notes')
-      .eq('org_id', orgId)
-      .is('archived_at', null)
-      .order('arr', { ascending: false, nullsFirst: false })
-      .limit(50),
+  // First fetch accounts for this org to scope all subsequent queries
+  const accountsRes = await serviceClient
+    .from('accounts')
+    .select('id, name, domain, arr, tier, health_score, health_trend, risk_level, renewal_date, csm_notes')
+    .eq('org_id', orgId)
+    .is('archived_at', null)
+    .order('arr', { ascending: false, nullsFirst: false })
+    .limit(50)
 
-    serviceClient
-      .from('account_tasks')
-      .select('title, status, priority, due_date, accounts(name)')
-      .in('status', ['pending', 'in_progress'])
-      .order('due_date', { ascending: true, nullsFirst: false })
-      .limit(30),
+  const orgAccountIds = (accountsRes.data ?? []).map((a: { id: string }) => a.id)
 
-    serviceClient
-      .from('account_events')
-      .select('type, title, sentiment, occurred_at, accounts(name)')
-      .order('occurred_at', { ascending: false })
-      .limit(20),
-  ])
+  // Fetch tasks and events scoped to org accounts only
+  const [tasksRes, eventsRes] = orgAccountIds.length > 0
+    ? await Promise.all([
+        serviceClient
+          .from('account_tasks')
+          .select('title, status, priority, due_date, accounts(name)')
+          .in('account_id', orgAccountIds)
+          .in('status', ['pending', 'in_progress'])
+          .order('due_date', { ascending: true, nullsFirst: false })
+          .limit(30),
+
+        serviceClient
+          .from('account_events')
+          .select('type, title, sentiment, occurred_at, accounts(name)')
+          .in('account_id', orgAccountIds)
+          .order('occurred_at', { ascending: false })
+          .limit(20),
+      ])
+    : [{ data: [] }, { data: [] }]
 
   const accounts = (accountsRes.data ?? []) as unknown as AccountSummary[]
 

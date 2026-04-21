@@ -9,8 +9,10 @@ interface AuthContextValue {
   session: Session | null
   loading: boolean
   orgId: string | null
+  needsOnboarding: boolean
   signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
+  setOrgId: (id: string) => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)

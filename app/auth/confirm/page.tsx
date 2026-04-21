@@ -4,6 +4,17 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
+interface EnsureOrgResult {
+  orgId: string | null
+  needsOnboarding?: boolean
+}
+
+async function ensureOrg(): Promise<EnsureOrgResult> {
+  const res = await fetch('/api/auth/ensure-org', { method: 'POST' })
+  if (!res.ok) return { orgId: null }
+  return await res.json() as EnsureOrgResult
+}
+
 /**
  * Handles Supabase email confirmations and invites.
  * Tokens arrive in the URL hash fragment (#access_token=...)
@@ -17,8 +28,6 @@ export default function AuthConfirmPage() {
     async function handleAuth() {
       const supabase = createClient()
 
-      // Supabase JS client auto-detects hash fragments and sets the session
-      // We just need to wait for it to process
       const { data: { session }, error } = await supabase.auth.getSession()
 
       if (error) {
@@ -29,21 +38,19 @@ export default function AuthConfirmPage() {
 
       if (session) {
         setStatus('Sesión detectada. Configurando...')
-        // Ensure org is set up (handles invited users)
-        await fetch('/api/auth/ensure-org', { method: 'POST' })
-        router.replace('/')
+        const result = await ensureOrg()
+        router.replace(result.needsOnboarding ? '/onboarding' : '/')
         return
       }
 
       // No session and no hash — maybe the hash was already consumed
-      // Try listening for auth state change briefly
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (event, newSession) => {
           if (event === 'SIGNED_IN' && newSession) {
             setStatus('Sesión iniciada. Configurando...')
-            await fetch('/api/auth/ensure-org', { method: 'POST' })
+            const result = await ensureOrg()
             subscription.unsubscribe()
-            router.replace('/')
+            router.replace(result.needsOnboarding ? '/onboarding' : '/')
           }
         }
       )
