@@ -49,10 +49,10 @@ export async function POST() {
       .single()
 
     if (org) {
-      // Create profile linking user to the invited org
+      // Create profile — ON CONFLICT (PK) means a concurrent request already handled it
       const { error: profileError } = await serviceClient
         .from('user_profiles')
-        .insert({ id: user.id, org_id: invitedOrgId, role: invitedRole })
+        .upsert({ id: user.id, org_id: invitedOrgId, role: invitedRole }, { onConflict: 'id', ignoreDuplicates: true })
 
       if (profileError) {
         console.error('ensure-org: failed to create invited user profile', profileError)
@@ -73,42 +73,36 @@ export async function POST() {
     }
   }
 
-  // New user without invite: create organization + profile
+  // New user without invite: create organization + profile atomically via DB function
+  // This prevents race conditions where concurrent requests each create a separate org
   const userName = (user.user_metadata?.full_name as string | undefined) ?? user.email ?? 'Usuario'
   const orgName = `${userName} Org`
   const orgSlug = `org-${user.id.slice(0, 8)}-${Date.now()}`
 
-  const { data: org, error: orgError } = await serviceClient
-    .from('organizations')
-    .insert({ name: orgName, slug: orgSlug })
-    .select('id')
-    .single()
-
-  if (orgError || !org) {
-    console.error('ensure-org: failed to create organization', orgError)
-    return NextResponse.json(
-      { error: 'Failed to create organization', details: orgError?.message },
-      { status: 500 }
-    )
-  }
-
-  const { error: profileError } = await serviceClient
-    .from('user_profiles')
-    .insert({ id: user.id, org_id: org.id, role: 'admin' })
-
-  if (profileError) {
-    console.error('ensure-org: failed to create user profile', profileError)
-    return NextResponse.json(
-      { error: 'Failed to create user profile', details: profileError.message },
-      { status: 500 }
-    )
-  }
-
-  // Set org_id in JWT app_metadata so RLS policies can use it
-  await serviceClient.auth.admin.updateUserById(user.id, {
-    app_metadata: { ...user.app_metadata, org_id: org.id },
+  const { data: result, error: rpcError } = await serviceClient.rpc('ensure_user_org', {
+    p_user_id: user.id,
+    p_org_name: orgName,
+    p_org_slug: orgSlug,
   })
 
-  const response: EnsureOrgResponse = { orgId: org.id, isNewUser: true }
+  if (rpcError || !result) {
+    console.error('ensure-org: rpc ensure_user_org failed', rpcError)
+    return NextResponse.json(
+      { error: 'Failed to ensure organization', details: rpcError?.message },
+      { status: 500 }
+    )
+  }
+
+  const orgId = result.org_id as string
+  const isNew = result.is_new as boolean
+
+  // Set org_id in JWT app_metadata so RLS policies can use it
+  if (user.app_metadata?.org_id !== orgId) {
+    await serviceClient.auth.admin.updateUserById(user.id, {
+      app_metadata: { ...user.app_metadata, org_id: orgId },
+    })
+  }
+
+  const response: EnsureOrgResponse = { orgId, isNewUser: isNew }
   return NextResponse.json(response)
 }
