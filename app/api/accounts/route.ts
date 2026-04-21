@@ -2,9 +2,9 @@ import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { AccountRepositorySupabase } from '@/infrastructure/db/AccountRepositorySupabase'
 import { CreateAccountSchema } from '@/domain/account/Account'
+import { authenticateRequest } from '@/lib/supabase/apiAuth'
 
 const QuerySchema = z.object({
-  orgId: z.string().uuid(),
   page: z.coerce.number().min(1).default(1),
   pageSize: z.coerce.number().min(1).max(100).default(20),
   riskLevel: z.string().optional(),
@@ -16,6 +16,9 @@ const QuerySchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await authenticateRequest()
+    if (!auth.ok) return Response.json({ error: auth.error }, { status: auth.status })
+
     const params = Object.fromEntries(request.nextUrl.searchParams)
     const query = QuerySchema.safeParse(params)
 
@@ -23,11 +26,11 @@ export async function GET(request: NextRequest) {
       return Response.json({ error: query.error.flatten() }, { status: 400 })
     }
 
-    const { orgId, page, pageSize, riskLevel, csmId, renewalBefore, search, tier } = query.data
+    const { page, pageSize, riskLevel, csmId, renewalBefore, search, tier } = query.data
 
     const repo = new AccountRepositorySupabase()
     const result = await repo.findAll(
-      { orgId, riskLevel, csmId, renewalBefore, search, tier },
+      { orgId: auth.orgId, riskLevel, csmId, renewalBefore, search, tier },
       { page, pageSize }
     )
 
@@ -39,21 +42,21 @@ export async function GET(request: NextRequest) {
   }
 }
 
-const CreateBodySchema = CreateAccountSchema.extend({
-  orgId: z.string().uuid(),
-})
-
 export async function POST(request: NextRequest) {
   try {
+    const auth = await authenticateRequest()
+    if (!auth.ok) return Response.json({ error: auth.error }, { status: auth.status })
+
     const body = await request.json()
-    const parsed = CreateBodySchema.safeParse(body)
+    const ClientCreateSchema = CreateAccountSchema.omit({ orgId: true })
+    const parsed = ClientCreateSchema.safeParse(body)
 
     if (!parsed.success) {
       return Response.json({ error: parsed.error.flatten() }, { status: 400 })
     }
 
     const repo = new AccountRepositorySupabase()
-    const account = await repo.create(parsed.data)
+    const account = await repo.create({ ...parsed.data, orgId: auth.orgId })
 
     return Response.json(account, { status: 201 })
   } catch (error) {

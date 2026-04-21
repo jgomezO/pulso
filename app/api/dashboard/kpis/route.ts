@@ -1,11 +1,12 @@
-import { NextRequest } from 'next/server'
 import { createServiceClient } from '@/infrastructure/db/supabase'
+import { authenticateRequest } from '@/lib/supabase/apiAuth'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const orgId = request.nextUrl.searchParams.get('orgId')
-    if (!orgId) return Response.json({ error: 'orgId required' }, { status: 400 })
+    const auth = await authenticateRequest()
+    if (!auth.ok) return Response.json({ error: auth.error }, { status: auth.status })
 
+    const orgId = auth.orgId
     const db = createServiceClient()
 
     const { data: accounts, error } = await db

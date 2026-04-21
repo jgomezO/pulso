@@ -64,7 +64,7 @@ export default function ProfilePage() {
   const isLoading = authLoading || profileLoading
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-2xl mx-auto">
       <h1 className="text-lg font-semibold text-[#0F1117] mb-6">Mi perfil</h1>
 
       <div className="space-y-4">

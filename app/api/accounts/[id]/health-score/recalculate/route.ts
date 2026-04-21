@@ -1,25 +1,22 @@
 import { NextRequest } from 'next/server'
-import { z } from 'zod'
 import { AccountRepositorySupabase } from '@/infrastructure/db/AccountRepositorySupabase'
 import { SignalValuesRepository } from '@/infrastructure/db/SignalValuesRepository'
 import { HealthScoreConfigRepository } from '@/infrastructure/db/HealthScoreConfigRepository'
 import { calculateScore } from '@/lib/health-score/configCalculator'
 import { getHealthTrend, getRiskLevel } from '@/lib/health-score/calculator'
 import { createServiceClient } from '@/infrastructure/db/supabase'
-
-const BodySchema = z.object({ orgId: z.string().uuid() })
+import { authenticateRequest } from '@/lib/supabase/apiAuth'
 
 export async function POST(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params
-    const body = await request.json()
-    const parsed = BodySchema.safeParse(body)
-    if (!parsed.success) return Response.json({ error: parsed.error.flatten() }, { status: 400 })
+    const auth = await authenticateRequest()
+    if (!auth.ok) return Response.json({ error: auth.error }, { status: auth.status })
 
-    const { orgId } = parsed.data
+    const { id } = await params
+    const orgId = auth.orgId
 
     const [values, signals, account] = await Promise.all([
       new SignalValuesRepository().getByAccountId(id),

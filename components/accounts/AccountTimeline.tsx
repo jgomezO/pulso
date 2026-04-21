@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Button, TextField, Input, TextArea, Select, ListBox, ListBoxItem, Skeleton } from '@heroui/react'
+import { Button, TextField, Input, TextArea, Select, ListBox, ListBoxItem, Skeleton, AlertDialog, Checkbox, TimeField } from '@heroui/react'
 import { Icon } from '@/components/shared/Icon'
-import { IconChevronRight, IconBack } from '@/lib/icons'
+import { IconChevronRight, IconBack, IconCopy, IconCheck, IconClose } from '@/lib/icons'
 import type { AccountEvent, EventType } from '@/domain/event/AccountEvent'
 import { formatRelative, formatDate } from '@/lib/utils/date'
 import { DatePickerField } from '@/components/shared/DatePickerField'
-import { parseDate, type CalendarDate } from '@internationalized/date'
+import { parseDate, Time, type CalendarDate } from '@internationalized/date'
+import type { TimeValue } from 'react-aria-components'
 
 // ── Type config ────────────────────────────────────────────────────────────────
 
@@ -117,14 +118,10 @@ function EventMeta({ event }: { event: AccountEvent }) {
   }
   if (event.type === 'meeting') {
     const attendees = Array.isArray(meta.attendees) ? meta.attendees as string[] : []
-    return (
-      <p className="text-xs text-[#6B7280] mt-1.5">
-        {[
-          attendees.length > 0 && `Asistentes: ${attendees.join(', ')}`,
-          meta.duration_minutes && `${meta.duration_minutes} min`,
-        ].filter(Boolean).join(' · ')}
-      </p>
-    )
+    const meetLink = meta.meetLink as string | null
+    const googleEventId = meta.googleEventId as string | null
+    const cancelled = meta.cancelled as boolean | undefined
+    return <MeetingMeta event={event} attendees={attendees} meetLink={meetLink} googleEventId={googleEventId} cancelled={cancelled} durationMinutes={meta.duration_minutes as number | undefined} />
   }
   if (event.type === 'ticket') {
     const STATUS_COLOR: Record<string, string> = {
@@ -156,6 +153,129 @@ function EventMeta({ event }: { event: AccountEvent }) {
     )
   }
   return null
+}
+
+// ── Meeting metadata with Meet link + cancel ─────────────────────────────────
+
+function MeetingMeta({ event, attendees, meetLink, googleEventId, cancelled, durationMinutes }: {
+  event: AccountEvent
+  attendees: string[]
+  meetLink: string | null
+  googleEventId: string | null
+  cancelled: boolean | undefined
+  durationMinutes: number | undefined
+}) {
+  const [copied, setCopied] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
+  const [isCancelled, setIsCancelled] = useState(!!cancelled)
+
+  async function handleCopy() {
+    if (meetLink) {
+      await navigator.clipboard.writeText(meetLink)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
+  async function handleCancel(close: () => void) {
+    if (!googleEventId) return
+
+    setCancelling(true)
+    try {
+      const res = await fetch('/api/integrations/google-calendar/events/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventId: event.id, googleEventId }),
+      })
+      if (res.ok) {
+        setIsCancelled(true)
+      }
+    } finally {
+      setCancelling(false)
+      close()
+    }
+  }
+
+  if (isCancelled) {
+    return (
+      <div className="mt-1.5">
+        <span className="text-xs font-medium text-red-500 bg-red-50 px-2 py-0.5 rounded-md">
+          Reunión cancelada
+        </span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-1.5 space-y-1.5">
+      {attendees.length > 0 && (
+        <p className="text-xs text-[#6B7280]">
+          Asistentes: {attendees.join(', ')}
+          {durationMinutes ? ` · ${durationMinutes} min` : ''}
+        </p>
+      )}
+      {meetLink && (
+        <div className="flex items-center gap-2">
+          <a
+            href={meetLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-[#4F6EF7] hover:underline truncate max-w-[200px]"
+          >
+            {meetLink}
+          </a>
+          <button
+            onClick={handleCopy}
+            className="flex items-center gap-0.5 text-[10px] text-[#6B7280] hover:text-[#4F6EF7] transition-colors"
+          >
+            <Icon icon={copied ? IconCheck : IconCopy} size={12} />
+            {copied ? 'Copiado' : 'Copiar'}
+          </button>
+        </div>
+      )}
+      {googleEventId && !isCancelled && (
+        <AlertDialog.Root>
+          <AlertDialog.Trigger>
+            <button className="flex items-center gap-1.5 text-xs font-medium text-red-500 hover:text-red-700 cursor-pointer transition-colors mt-1 py-1 px-2 rounded-md hover:bg-red-50">
+              <Icon icon={IconClose} size={14} />
+              Cancelar reunión
+            </button>
+          </AlertDialog.Trigger>
+          <AlertDialog.Backdrop>
+            <AlertDialog.Container placement="center">
+              <AlertDialog.Dialog>
+                {({ close }) => (
+                  <>
+                    <AlertDialog.Icon status="danger" />
+                    <AlertDialog.Header>
+                      <AlertDialog.Heading>Cancelar reunión</AlertDialog.Heading>
+                    </AlertDialog.Header>
+                    <AlertDialog.Body>
+                      <p className="text-sm text-[#6B7280]">
+                        Esta acción eliminará el evento de Google Calendar y notificará a los asistentes. No se puede deshacer.
+                      </p>
+                    </AlertDialog.Body>
+                    <AlertDialog.Footer>
+                      <Button variant="ghost" onPress={close}>
+                        No, mantener
+                      </Button>
+                      <Button
+                        variant="danger"
+                        onPress={() => handleCancel(close)}
+                        isDisabled={cancelling}
+                      >
+                        {cancelling ? 'Cancelando...' : 'Sí, cancelar'}
+                      </Button>
+                    </AlertDialog.Footer>
+                  </>
+                )}
+              </AlertDialog.Dialog>
+            </AlertDialog.Container>
+          </AlertDialog.Backdrop>
+        </AlertDialog.Root>
+      )}
+    </div>
+  )
 }
 
 // ── Event card ────────────────────────────────────────────────────────────────
@@ -270,12 +390,16 @@ function ActivityForm({
   const [direction,    setDirection]    = useState<'sent' | 'received'>('sent')
   const [ticketStatus, setTicketStatus] = useState<'open' | 'resolved' | 'pending'>('open')
   const [priority,     setPriority]     = useState<'low' | 'medium' | 'high' | 'critical'>('medium')
+  const [withGoogleMeet, setWithGoogleMeet] = useState(false)
+  const [meetTime,     setMeetTime]     = useState<TimeValue>(new Time(10, 0))
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error,        setError]        = useState('')
+  const [createdMeetLink, setCreatedMeetLink] = useState<string | null>(null)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+    setCreatedMeetLink(null)
     setIsSubmitting(true)
 
     const meta: Record<string, unknown> = {}
@@ -283,6 +407,40 @@ function ActivityForm({
     if (type === 'call'    && duration) meta.duration_minutes = Number(duration)
     if (type === 'meeting' && duration) meta.duration_minutes = Number(duration)
     if (type === 'ticket') { meta.status = ticketStatus; meta.priority = priority }
+
+    // If meeting with Google Meet, create via Google Calendar API
+    if (type === 'meeting' && withGoogleMeet) {
+      const dateStr = occurredAt ? occurredAt.toString() : new Date().toISOString().slice(0, 10)
+      const timeStr = `${String(meetTime.hour).padStart(2, '0')}:${String(meetTime.minute).padStart(2, '0')}`
+      const startDateTime = new Date(`${dateStr}T${timeStr}`).toISOString()
+      const durationMin = duration ? parseInt(duration) : 30
+      const endDateTime = new Date(new Date(startDateTime).getTime() + durationMin * 60 * 1000).toISOString()
+
+      const res = await fetch('/api/integrations/google-calendar/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accountId,
+          title: title.trim() || 'Reunión',
+          description: description.trim() || undefined,
+          startDateTime,
+          endDateTime,
+          attendees: [{ email: 'meeting@placeholder.com', name: 'Attendee' }],
+        }),
+      })
+
+      setIsSubmitting(false)
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: 'Error al crear evento en Google Calendar' }))
+        setError(typeof data.error === 'string' ? data.error : 'Error al crear evento en Google Calendar')
+        return
+      }
+
+      const data = await res.json()
+      if (data.meetLink) setCreatedMeetLink(data.meetLink)
+      onCreated()
+      return
+    }
 
     const res = await fetch(`/api/accounts/${accountId}/events`, {
       method:  'POST',
@@ -360,6 +518,65 @@ function ActivityForm({
           </TextField>
         )}
 
+        {/* Google Meet toggle for meetings */}
+        {type === 'meeting' && (
+          <div className="space-y-2">
+            <Checkbox.Root
+              isSelected={withGoogleMeet}
+              onChange={setWithGoogleMeet}
+              className="flex items-center gap-2 cursor-pointer"
+            >
+              <Checkbox.Control>
+                <Checkbox.Indicator />
+              </Checkbox.Control>
+              <Checkbox.Content>
+                <span className="text-sm text-[#0F1117]">Crear con Google Meet</span>
+              </Checkbox.Content>
+            </Checkbox.Root>
+            {withGoogleMeet && (
+              <div className="flex flex-col gap-1.5 max-w-[160px]">
+                <span className="block text-sm font-medium text-[#0F1117]">Hora</span>
+                <TimeField.Root
+                  value={meetTime}
+                  onChange={(val) => { if (val) setMeetTime(val) }}
+                  aria-label="Hora de la reunión"
+                  className="w-full"
+                >
+                  <TimeField.Group>
+                    <TimeField.InputContainer>
+                      <TimeField.Input>
+                        {(segment) => <TimeField.Segment segment={segment} />}
+                      </TimeField.Input>
+                    </TimeField.InputContainer>
+                  </TimeField.Group>
+                </TimeField.Root>
+              </div>
+            )}
+            {createdMeetLink && (
+              <div className="flex items-center gap-2 p-2 bg-[#E8FAF0] rounded-lg">
+                <a
+                  href={createdMeetLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-[#4F6EF7] hover:underline truncate"
+                >
+                  {createdMeetLink}
+                </a>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onPress={async () => { await navigator.clipboard.writeText(createdMeetLink) }}
+                  className="flex items-center gap-0.5 text-[10px] text-[#6B7280] hover:text-[#4F6EF7] p-1 h-auto min-w-0"
+                >
+                  <Icon icon={IconCopy} size={12} />
+                  Copiar
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Email direction */}
         {type === 'email' && (
           <Select.Root
@@ -422,7 +639,7 @@ function ActivityForm({
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 items-end">
           <DatePickerField
             label="Fecha"
             value={occurredAt}
@@ -430,24 +647,27 @@ function ActivityForm({
           />
 
           {/* Sentiment */}
-          <Select.Root
-            selectedKey={sentiment}
-            onSelectionChange={key => setSentiment((key as string) ?? '')}
-            className="w-full"
-          >
-            <Select.Trigger className={`${inputClass} flex items-center justify-between cursor-pointer`}>
-              <Select.Value>{({ isPlaceholder }: { isPlaceholder: boolean }) => isPlaceholder ? 'Sin sentiment' : undefined}</Select.Value>
-              <Select.Indicator />
-            </Select.Trigger>
-            <Select.Popover>
-              <ListBox>
-                <ListBoxItem id="">Sin sentiment</ListBoxItem>
-                <ListBoxItem id="positive">Positivo</ListBoxItem>
-                <ListBoxItem id="neutral">Neutral</ListBoxItem>
-                <ListBoxItem id="negative">Negativo</ListBoxItem>
-              </ListBox>
-            </Select.Popover>
-          </Select.Root>
+          <div className="flex flex-col gap-1.5 w-full">
+            <span className="block text-sm font-medium text-[#0F1117]">Sentiment</span>
+            <Select.Root
+              selectedKey={sentiment}
+              onSelectionChange={key => setSentiment((key as string) ?? '')}
+              className="w-full"
+            >
+              <Select.Trigger className={`${inputClass} flex items-center justify-between cursor-pointer`}>
+                <Select.Value>{({ isPlaceholder }: { isPlaceholder: boolean }) => isPlaceholder ? 'Sin sentiment' : undefined}</Select.Value>
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  <ListBoxItem id="">Sin sentiment</ListBoxItem>
+                  <ListBoxItem id="positive">Positivo</ListBoxItem>
+                  <ListBoxItem id="neutral">Neutral</ListBoxItem>
+                  <ListBoxItem id="negative">Negativo</ListBoxItem>
+                </ListBox>
+              </Select.Popover>
+            </Select.Root>
+          </div>
         </div>
       </div>
 

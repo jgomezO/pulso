@@ -3,11 +3,9 @@ import type { AccountOverview } from '@/application/accounts/GetAccountOverview'
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
-export function useAccount(accountId: string, orgId: string) {
+export function useAccount(accountId: string) {
   const { data, error, isLoading, mutate } = useSWR<AccountOverview>(
-    accountId && orgId
-      ? `/api/accounts/${accountId}?orgId=${orgId}`
-      : null,
+    accountId ? `/api/accounts/${accountId}` : null,
     fetcher
   )
 

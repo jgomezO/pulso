@@ -1,10 +1,10 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { createServiceClient } from '@/infrastructure/db/supabase'
+import { authenticateRequest } from '@/lib/supabase/apiAuth'
 
 const QuerySchema = z.object({
   q: z.string().min(1).max(100),
-  orgId: z.string().uuid(),
 })
 
 interface SearchResults {
@@ -14,6 +14,9 @@ interface SearchResults {
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await authenticateRequest()
+    if (!auth.ok) return Response.json({ error: auth.error }, { status: auth.status })
+
     const params = Object.fromEntries(request.nextUrl.searchParams)
     const parsed = QuerySchema.safeParse(params)
 
@@ -21,7 +24,8 @@ export async function GET(request: NextRequest) {
       return Response.json({ error: parsed.error.flatten() }, { status: 400 })
     }
 
-    const { q, orgId } = parsed.data
+    const { q } = parsed.data
+    const orgId = auth.orgId
     const db = createServiceClient()
 
     const [accountsRes, contactsRes] = await Promise.all([

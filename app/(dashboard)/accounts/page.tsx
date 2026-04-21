@@ -17,8 +17,6 @@ interface AccountsResponse {
   pageSize: number
 }
 
-const ORG_ID = process.env.NEXT_PUBLIC_ORG_ID ?? 'demo-org-id'
-
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
 type QuickFilter = 'all' | 'at-risk' | 'declining' | 'renewing'
@@ -52,7 +50,7 @@ export default function AccountsPage() {
   }, [])
 
   // Always fetch all (no server-side quick-filter) — we filter client-side
-  const params = new URLSearchParams({ orgId: ORG_ID, pageSize: '100' })
+  const params = new URLSearchParams({ pageSize: '100' })
   if (debouncedSearch) params.set('search', debouncedSearch)
   if (tierFilter)      params.set('tier', tierFilter)
 
@@ -78,7 +76,7 @@ export default function AccountsPage() {
   const totalArr = filtered.reduce((sum, a) => sum + (a.arr ?? 0), 0)
 
   async function handleArchive(id: string) {
-    await fetch(`/api/accounts/${id}?orgId=${ORG_ID}`, { method: 'DELETE' })
+    await fetch(`/api/accounts/${id}`, { method: 'DELETE' })
     mutate()
   }
 

@@ -1,5 +1,5 @@
-import { NextRequest } from 'next/server'
 import { createServiceClient } from '@/infrastructure/db/supabase'
+import { authenticateRequest } from '@/lib/supabase/apiAuth'
 
 interface AttentionAccount {
   id: string
@@ -13,11 +13,12 @@ interface AttentionAccount {
   urgency: number
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const orgId = request.nextUrl.searchParams.get('orgId')
-    if (!orgId) return Response.json({ error: 'orgId required' }, { status: 400 })
+    const auth = await authenticateRequest()
+    if (!auth.ok) return Response.json({ error: auth.error }, { status: auth.status })
 
+    const orgId = auth.orgId
     const db = createServiceClient()
     const now = new Date()
     const in30Days = new Date(now); in30Days.setDate(in30Days.getDate() + 30)
@@ -46,23 +47,19 @@ export async function GET(request: NextRequest) {
       const score = a.health_score ?? null
       const renewal = a.renewal_date ? new Date(a.renewal_date) : null
 
-      // Score < 40 → critical
       if (score !== null && score < 40) {
         reasons.push('Score crítico')
         urgency += 40
       }
-      // Declining trend
       if (a.health_trend === 'declining') {
         reasons.push('Score en declive')
         urgency += 20
       }
-      // Renewal < 30 days and score < 70
       if (renewal && renewal >= now && renewal <= in30Days && (score === null || score < 70)) {
         const days = Math.ceil((renewal.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
         reasons.push(`Renueva en ${days}d`)
         urgency += 30
       }
-      // Overdue tasks
       if (overdueAccountIds.has(a.id)) {
         reasons.push('Tareas vencidas')
         urgency += 10

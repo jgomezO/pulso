@@ -3,9 +3,9 @@ import { z } from 'zod'
 import { AccountRepositorySupabase } from '@/infrastructure/db/AccountRepositorySupabase'
 import { CalculateHealthScore } from '@/application/accounts/CalculateHealthScore'
 import { createServiceClient } from '@/infrastructure/db/supabase'
+import { authenticateRequest } from '@/lib/supabase/apiAuth'
 
 const BodySchema = z.object({
-  orgId: z.string().uuid(),
   signals: z.object({
     productUsageScore: z.number().min(0).max(100),
     supportHealthScore: z.number().min(0).max(100),
@@ -21,6 +21,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await authenticateRequest()
+    if (!auth.ok) return Response.json({ error: auth.error }, { status: auth.status })
+
     const { id } = await params
     const db = createServiceClient()
 
@@ -45,6 +48,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await authenticateRequest()
+    if (!auth.ok) return Response.json({ error: auth.error }, { status: auth.status })
+
     const { id } = await params
     const body = await request.json()
     const parsed = BodySchema.safeParse(body)
@@ -54,7 +60,7 @@ export async function POST(
     }
 
     const useCase = new CalculateHealthScore(new AccountRepositorySupabase())
-    const result = await useCase.execute(id, parsed.data.orgId, parsed.data.signals)
+    const result = await useCase.execute(id, auth.orgId, parsed.data.signals)
 
     return Response.json(result)
   } catch (error) {

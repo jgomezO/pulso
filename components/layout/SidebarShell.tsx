@@ -19,7 +19,7 @@ export function SidebarShell({ children }: SidebarShellProps) {
         style={{ marginLeft: open ? 220 : 64 }}
       >
         <TopBar />
-        <main className="min-h-screen p-6">
+        <main className="h-[calc(100vh-64px)] overflow-y-auto p-6">
           {children}
         </main>
       </div>

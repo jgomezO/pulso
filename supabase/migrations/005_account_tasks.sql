@@ -1,4 +1,4 @@
-CREATE TABLE account_tasks (
+CREATE TABLE IF NOT EXISTS account_tasks (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   account_id   UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
   title        TEXT NOT NULL,
@@ -18,14 +18,16 @@ CREATE TABLE account_tasks (
   updated_at   TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_tasks_account  ON account_tasks(account_id, status);
-CREATE INDEX idx_tasks_assigned ON account_tasks(assigned_to, status, due_date);
+CREATE INDEX IF NOT EXISTS idx_tasks_account  ON account_tasks(account_id, status);
+CREATE INDEX IF NOT EXISTS idx_tasks_assigned ON account_tasks(assigned_to, status, due_date);
+DROP TRIGGER IF EXISTS update_account_tasks_updated_at ON account_tasks;
 
 CREATE TRIGGER update_account_tasks_updated_at
   BEFORE UPDATE ON account_tasks
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 ALTER TABLE account_tasks ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "org_isolation_tasks" ON account_tasks;
 
 CREATE POLICY "org_isolation_tasks" ON account_tasks
   USING (account_id IN (

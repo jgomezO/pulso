@@ -11,7 +11,7 @@ export const AccountEventSchema = z.object({
   id: z.string().uuid(),
   accountId: z.string().uuid(),
   type: z.enum(EVENT_TYPES),
-  source: z.enum(['manual', 'hubspot', 'intercom', 'segment'] as const).nullable().optional(),
+  source: z.enum(['manual', 'hubspot', 'intercom', 'segment', 'google_calendar'] as const).nullable().optional(),
   title: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   sentiment: z.enum(['positive', 'neutral', 'negative'] as const).nullable().optional(),

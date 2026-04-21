@@ -5,7 +5,6 @@ import { Button, Checkbox, Table } from '@heroui/react'
 import { transformRow, type PulsoField } from '@/lib/import/csv'
 import { formatCurrency } from '@/lib/utils/format'
 
-const ORG_ID = process.env.NEXT_PUBLIC_ORG_ID ?? 'demo-org-id'
 
 interface ImportPreviewProps {
   rows:         Record<string, string>[]
@@ -27,7 +26,7 @@ export function ImportPreview({ rows, mapping, onImported, onBack }: ImportPrevi
   const [importing,       setImporting]       = useState(false)
 
   useEffect(() => {
-    fetch(`/api/accounts?orgId=${ORG_ID}&pageSize=500`)
+    fetch('/api/accounts?pageSize=500')
       .then(r => r.json())
       .then(d => {
         const domains = new Set<string>((d.data ?? []).map((a: { domain?: string | null }) => a.domain).filter(Boolean))
@@ -53,7 +52,6 @@ export function ImportPreview({ rows, mapping, onImported, onBack }: ImportPrevi
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({
-        orgId:          ORG_ID,
         rows:           importableRows.map(r => ({
           name:        r.name,
           domain:      r.domain,

@@ -1,33 +1,25 @@
 import { NextRequest } from 'next/server'
-import { z } from 'zod'
 import { AccountRepositorySupabase } from '@/infrastructure/db/AccountRepositorySupabase'
 import { EventRepositorySupabase } from '@/infrastructure/db/EventRepositorySupabase'
 import { GenerateAccountSummary } from '@/application/accounts/GenerateAccountSummary'
-
-const QuerySchema = z.object({
-  orgId: z.string().uuid(),
-})
+import { authenticateRequest } from '@/lib/supabase/apiAuth'
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params
-    const query = QuerySchema.safeParse(
-      Object.fromEntries(request.nextUrl.searchParams)
-    )
+    const auth = await authenticateRequest()
+    if (!auth.ok) return Response.json({ error: auth.error }, { status: auth.status })
 
-    if (!query.success) {
-      return Response.json({ error: query.error.flatten() }, { status: 400 })
-    }
+    const { id } = await params
 
     const useCase = new GenerateAccountSummary(
       new AccountRepositorySupabase(),
       new EventRepositorySupabase()
     )
 
-    const stream = await useCase.execute(id, query.data.orgId)
+    const stream = await useCase.execute(id, auth.orgId)
 
     return new Response(stream, {
       headers: {

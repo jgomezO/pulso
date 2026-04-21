@@ -19,8 +19,6 @@ interface ActivePlan {
   accountName: string | null
 }
 
-const ORG_ID = process.env.NEXT_PUBLIC_ORG_ID ?? 'demo-org-id'
-
 const PRIORITY_CONFIG = {
   urgent: { label: 'Urgente', className: 'bg-[#FEE8E8] text-[#EF4444]' },
   high:   { label: 'Alta',    className: 'bg-[#FEF3E8] text-[#F58C37]' },
@@ -73,17 +71,17 @@ export default function HomePage() {
   const [plansLoad,     setPlansLoad]     = useState(true)
 
   useEffect(() => {
-    fetch(`/api/dashboard/kpis?orgId=${ORG_ID}`)
+    fetch('/api/dashboard/kpis')
       .then(r => r.json())
       .then(d => { setKpis(d); setKpisLoad(false) })
       .catch(() => setKpisLoad(false))
 
-    fetch(`/api/dashboard/attention?orgId=${ORG_ID}`)
+    fetch('/api/dashboard/attention')
       .then(r => r.json())
       .then(d => { setAttention(d.accounts ?? []); setAttentionLoad(false) })
       .catch(() => setAttentionLoad(false))
 
-    fetch(`/api/dashboard/plans?orgId=${ORG_ID}`)
+    fetch('/api/dashboard/plans')
       .then(r => r.json())
       .then(d => { setActivePlans(d.plans ?? []); setPlansLoad(false) })
       .catch(() => setPlansLoad(false))

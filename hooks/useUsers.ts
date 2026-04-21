@@ -8,9 +8,9 @@ interface OrgUser {
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
-export function useUsers(orgId: string) {
+export function useUsers() {
   const { data, error, isLoading } = useSWR<{ users: OrgUser[] }>(
-    orgId ? `/api/users?orgId=${orgId}` : null,
+    '/api/users',
     fetcher
   )
 

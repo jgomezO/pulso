@@ -13,6 +13,7 @@ import { ContactsSection } from '@/components/accounts/ContactsSection'
 import { HealthScoreDetail } from '@/components/accounts/HealthScoreDetail'
 import { CsmNotesSection } from '@/components/accounts/CsmNotesSection'
 import { MeetingBriefModal } from '@/components/accounts/MeetingBriefModal'
+import { NewGoogleMeetingModal } from '@/components/accounts/NewGoogleMeetingModal'
 import { SyncButtons } from '@/components/accounts/SyncButtons'
 import { AIInsightCard } from '@/components/shared/AIInsightCard'
 import { PageSkeleton } from '@/components/shared/LoadingSkeleton'
@@ -20,8 +21,6 @@ import { formatCurrency } from '@/lib/utils/format'
 import { formatDate, daysUntil } from '@/lib/utils/date'
 import { Icon } from '@/components/shared/Icon'
 import { IconTrendUp, IconTrendDown, IconTrendStable, IconChevronRight } from '@/lib/icons'
-
-const ORG_ID = process.env.NEXT_PUBLIC_ORG_ID ?? 'demo-org-id'
 
 const TIER_COLOR: Record<string, string> = {
   enterprise: 'bg-[#F0EEFF] text-[#6C4EF2]',
@@ -37,9 +36,9 @@ export default function AccountDetailPage({
 }) {
   const { id } = use(params)
   const [activeTab, setActiveTab] = useState<'timeline' | 'tasks' | 'plans'>('timeline')
-  const { account, contacts, isLoading, mutate } = useAccount(id, ORG_ID)
+  const { account, contacts, isLoading, mutate } = useAccount(id)
   const { latest: healthRecord, previous } = useHealthScore(id)
-  const { summary, isStreaming, generate } = useAccountSummary(id, ORG_ID)
+  const { summary, isGenerating, generate } = useAccountSummary(id)
 
   if (isLoading) return <PageSkeleton />
   if (!account) {
@@ -85,6 +84,7 @@ export default function AccountDetailPage({
                 </button>
               </Link>
               <SyncButtons account={account} onSynced={mutate} />
+              <NewGoogleMeetingModal accountId={id} contacts={contacts} />
               <MeetingBriefModal account={account} contacts={contacts} />
             </div>
           </div>
@@ -126,7 +126,7 @@ export default function AccountDetailPage({
         </div>
 
         {/* AI Summary */}
-        {!summary && !isStreaming && (
+        {!summary && !isGenerating && (
           <div className="mb-6">
             <button
               onClick={generate}
@@ -136,12 +136,20 @@ export default function AccountDetailPage({
             </button>
           </div>
         )}
-        {(summary || isStreaming) && (
+        {isGenerating && (
+          <div className="mb-6">
+            <AIInsightCard
+              title="Resumen ejecutivo"
+              content=""
+              isLoading
+            />
+          </div>
+        )}
+        {summary && !isGenerating && (
           <div className="mb-6">
             <AIInsightCard
               title="Resumen ejecutivo"
               content={summary}
-              isStreaming={isStreaming}
             />
           </div>
         )}
@@ -214,7 +222,6 @@ export default function AccountDetailPage({
 
             <CsmNotesSection
               accountId={id}
-              orgId={ORG_ID}
               initialNotes={account.csmNotes ?? null}
             />
           </div>

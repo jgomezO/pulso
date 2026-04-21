@@ -8,7 +8,6 @@ import type { SignalConfig } from '@/lib/health-score/config'
 import { calculateScore } from '@/lib/health-score/configCalculator'
 import type { Account } from '@/domain/account/Account'
 
-const ORG_ID = process.env.NEXT_PUBLIC_ORG_ID ?? ''
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -170,7 +169,7 @@ function AccountScoreRow({ account, config }: { account: Account; config: Signal
       const res = await fetch(`/api/accounts/${account.id}/health-score/recalculate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orgId: ORG_ID }),
+        body: JSON.stringify({}),
       })
       if (res.ok) setSavedMsg('Guardado')
       else setSavedMsg('Error')
@@ -268,14 +267,14 @@ export default function HealthScoreSettingsPage() {
   const [accountsLoading, setAccountsLoading] = useState(true)
 
   useEffect(() => {
-    fetch(`/api/settings/health-score/config?orgId=${ORG_ID}`)
+    fetch('/api/settings/health-score/config')
       .then(r => r.json())
       .then(data => { setConfig(data.signals); setConfigLoaded(true) })
       .catch(() => setConfigLoaded(true))
   }, [])
 
   useEffect(() => {
-    fetch(`/api/accounts?orgId=${ORG_ID}&pageSize=100`)
+    fetch('/api/accounts?pageSize=100')
       .then(r => r.json())
       .then(data => { setAccounts(data.data ?? []); setAccountsLoading(false) })
       .catch(() => setAccountsLoading(false))
@@ -286,7 +285,7 @@ export default function HealthScoreSettingsPage() {
     await fetch('/api/settings/health-score/config', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orgId: ORG_ID, signals: config }),
+      body: JSON.stringify({ signals: config }),
     })
     setSavingConfig(false)
   }

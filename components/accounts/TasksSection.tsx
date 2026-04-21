@@ -12,7 +12,6 @@ import { useUsers } from '@/hooks/useUsers'
 import { formatDate } from '@/lib/utils/date'
 import { IconPlan } from '@/lib/icons'
 
-const ORG_ID = process.env.NEXT_PUBLIC_ORG_ID ?? ''
 
 // ── Priority config ───────────────────────────────────────────────────────────
 
@@ -221,25 +220,28 @@ function QuickAddForm({
       </TextField>
       {showExtra && (
         <div className="mt-2 space-y-2">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <Select.Root
-              selectedKey={priority}
-              onSelectionChange={key => setPriority((key as TaskPriority) ?? 'medium')}
-              className="w-full"
-            >
-              <Select.Trigger className={`${inputClass} h-8 flex items-center justify-between px-2.5 cursor-pointer`}>
-                <Select.Value />
-                <Select.Indicator />
-              </Select.Trigger>
-              <Select.Popover>
-                <ListBox>
-                  <ListBoxItem id="low">Baja</ListBoxItem>
-                  <ListBoxItem id="medium">Media</ListBoxItem>
-                  <ListBoxItem id="high">Alta</ListBoxItem>
-                  <ListBoxItem id="urgent">Urgente</ListBoxItem>
-                </ListBox>
-              </Select.Popover>
-            </Select.Root>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 items-end">
+            <div className="flex flex-col gap-1.5 w-full">
+              <span className="block text-sm font-medium text-[#0F1117]">Prioridad</span>
+              <Select.Root
+                selectedKey={priority}
+                onSelectionChange={key => setPriority((key as TaskPriority) ?? 'medium')}
+                className="w-full"
+              >
+                <Select.Trigger className={`${inputClass} h-8 flex items-center justify-between px-2.5 cursor-pointer`}>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    <ListBoxItem id="low">Baja</ListBoxItem>
+                    <ListBoxItem id="medium">Media</ListBoxItem>
+                    <ListBoxItem id="high">Alta</ListBoxItem>
+                    <ListBoxItem id="urgent">Urgente</ListBoxItem>
+                  </ListBox>
+                </Select.Popover>
+              </Select.Root>
+            </div>
 
             <DatePickerField
               label="Fecha límite"
@@ -318,7 +320,7 @@ export function TasksSection({ accountId }: TasksSectionProps) {
   const [tasks,     setTasks]     = useState<AccountTask[]>([])
   const [planMap,   setPlanMap]   = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(true)
-  const { users } = useUsers(ORG_ID)
+  const { users } = useUsers()
 
   useEffect(() => {
     let cancelled = false

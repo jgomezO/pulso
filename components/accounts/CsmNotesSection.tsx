@@ -5,11 +5,10 @@ import { TextField, TextArea } from '@heroui/react'
 
 interface CsmNotesSectionProps {
   accountId: string
-  orgId: string
   initialNotes: string | null
 }
 
-export function CsmNotesSection({ accountId, orgId, initialNotes }: CsmNotesSectionProps) {
+export function CsmNotesSection({ accountId, initialNotes }: CsmNotesSectionProps) {
   const [notes,  setNotes]  = useState(initialNotes ?? '')
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const timerRef            = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -32,7 +31,7 @@ export function CsmNotesSection({ accountId, orgId, initialNotes }: CsmNotesSect
     const res = await fetch(`/api/accounts/${accountId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orgId, csmNotes: value }),
+      body: JSON.stringify({ csmNotes: value }),
     })
     setStatus(res.ok ? 'saved' : 'error')
     if (res.ok) setTimeout(() => setStatus('idle'), 2000)

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 interface AccountSummary {
+  id: string
   name: string
   domain: string | null
   arr: number | null
@@ -10,6 +11,13 @@ interface AccountSummary {
   risk_level: string | null
   renewal_date: string | null
   csm_notes: string | null
+}
+
+interface HealthHistoryEntry {
+  account_id: string
+  score: number
+  signals: Record<string, number> | null
+  calculated_at: string
 }
 
 interface TaskSummary {
@@ -45,7 +53,7 @@ export async function buildPlatformContext(
   const [accountsRes, tasksRes, eventsRes] = await Promise.all([
     serviceClient
       .from('accounts')
-      .select('name, domain, arr, tier, health_score, health_trend, risk_level, renewal_date, csm_notes')
+      .select('id, name, domain, arr, tier, health_score, health_trend, risk_level, renewal_date, csm_notes')
       .eq('org_id', orgId)
       .is('archived_at', null)
       .order('arr', { ascending: false, nullsFirst: false })
@@ -65,7 +73,29 @@ export async function buildPlatformContext(
       .limit(20),
   ])
 
-  const accounts = (accountsRes.data ?? []) as AccountSummary[]
+  const accounts = (accountsRes.data ?? []) as unknown as AccountSummary[]
+
+  // Fetch latest health score history for accounts (with signal breakdown)
+  const accountIds = accounts.map(a => a.id)
+  const healthMap = new Map<string, HealthHistoryEntry>()
+
+  if (accountIds.length > 0) {
+    const { data: healthData } = await serviceClient
+      .from('health_score_history')
+      .select('account_id, score, signals, calculated_at')
+      .in('account_id', accountIds)
+      .order('calculated_at', { ascending: false })
+      .limit(accountIds.length)
+
+    if (healthData) {
+      // Keep only the most recent entry per account
+      for (const entry of healthData as HealthHistoryEntry[]) {
+        if (!healthMap.has(entry.account_id)) {
+          healthMap.set(entry.account_id, entry)
+        }
+      }
+    }
+  }
   const tasks = (tasksRes.data ?? []).map((t: Record<string, unknown>) => ({
     title: t.title as string,
     status: t.status as string,
@@ -87,9 +117,12 @@ export async function buildPlatformContext(
   const totalArr = accounts.reduce((sum, a) => sum + (a.arr ?? 0), 0)
   const atRisk = accounts.filter(a => a.risk_level === 'high' || a.risk_level === 'critical')
   const declining = accounts.filter(a => a.health_trend === 'declining')
-  const avgHealth = accounts.filter(a => a.health_score != null)
+  const avgHealth = accounts.filter(a => {
+    const score = a.health_score ?? healthMap.get(a.id)?.score ?? null
+    return score != null
+  })
   const avgScore = avgHealth.length > 0
-    ? Math.round(avgHealth.reduce((s, a) => s + (a.health_score ?? 0), 0) / avgHealth.length)
+    ? Math.round(avgHealth.reduce((s, a) => s + (a.health_score ?? healthMap.get(a.id)?.score ?? 0), 0) / avgHealth.length)
     : null
 
   parts.push(`## KPIs del portafolio
@@ -101,14 +134,31 @@ export async function buildPlatformContext(
 
   // --- Accounts table ---
   if (accounts.length > 0) {
-    const rows = accounts.map(a =>
-      `| ${a.name} | ${a.tier ?? '-'} | ${formatCurrency(a.arr)} | ${a.health_score ?? '-'} | ${a.health_trend ?? '-'} | ${a.risk_level ?? '-'} | ${formatDate(a.renewal_date)} |`
-    ).join('\n')
+    const rows = accounts.map(a => {
+      const histEntry = healthMap.get(a.id)
+      const score = a.health_score ?? histEntry?.score ?? null
+      return `| ${a.id} | ${a.name} | ${a.tier ?? '-'} | ${formatCurrency(a.arr)} | ${score ?? '-'} | ${a.health_trend ?? '-'} | ${a.risk_level ?? '-'} | ${formatDate(a.renewal_date)} |`
+    }).join('\n')
 
     parts.push(`## Cuentas (${accounts.length})
-| Cuenta | Tier | ARR | Score | Tendencia | Riesgo | Renovación |
-|--------|------|-----|-------|-----------|--------|------------|
+| ID | Cuenta | Tier | ARR | Score | Tendencia | Riesgo | Renovación |
+|----|--------|------|-----|-------|-----------|--------|------------|
 ${rows}`)
+  }
+
+  // --- Health score breakdown ---
+  const accountsWithHealth = accounts.filter(a => healthMap.has(a.id))
+  if (accountsWithHealth.length > 0) {
+    const healthLines = accountsWithHealth.map(a => {
+      const h = healthMap.get(a.id)!
+      const signals = h.signals
+        ? Object.entries(h.signals).map(([k, v]) => `${k}: ${v}`).join(', ')
+        : 'sin desglose'
+      return `- **${a.name}** — Score: ${h.score} | ${signals}`
+    }).join('\n')
+    parts.push(`## Desglose de Health Score por señales
+(product_usage, support_health, engagement, nps, payment_health, stakeholder_activity)
+${healthLines}`)
   }
 
   // --- At-risk detail ---

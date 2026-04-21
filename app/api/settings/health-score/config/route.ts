@@ -1,8 +1,7 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { HealthScoreConfigRepository } from '@/infrastructure/db/HealthScoreConfigRepository'
-
-const OrgSchema = z.object({ orgId: z.string().uuid() })
+import { authenticateRequest } from '@/lib/supabase/apiAuth'
 
 const SignalConfigSchema = z.object({
   key: z.string(),
@@ -12,17 +11,16 @@ const SignalConfigSchema = z.object({
 })
 
 const SaveSchema = z.object({
-  orgId: z.string().uuid(),
   signals: z.array(SignalConfigSchema),
 })
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const parsed = OrgSchema.safeParse(Object.fromEntries(request.nextUrl.searchParams))
-    if (!parsed.success) return Response.json({ error: parsed.error.flatten() }, { status: 400 })
+    const auth = await authenticateRequest()
+    if (!auth.ok) return Response.json({ error: auth.error }, { status: auth.status })
 
     const repo = new HealthScoreConfigRepository()
-    const signals = await repo.getConfig(parsed.data.orgId)
+    const signals = await repo.getConfig(auth.orgId)
     return Response.json({ signals })
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
@@ -32,12 +30,15 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await authenticateRequest()
+    if (!auth.ok) return Response.json({ error: auth.error }, { status: auth.status })
+
     const body = await request.json()
     const parsed = SaveSchema.safeParse(body)
     if (!parsed.success) return Response.json({ error: parsed.error.flatten() }, { status: 400 })
 
     const repo = new HealthScoreConfigRepository()
-    await repo.saveConfig(parsed.data.orgId, parsed.data.signals)
+    await repo.saveConfig(auth.orgId, parsed.data.signals)
     return Response.json({ ok: true })
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)

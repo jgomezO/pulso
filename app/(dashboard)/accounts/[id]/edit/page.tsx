@@ -7,8 +7,6 @@ import { AccountForm } from '@/components/accounts/AccountForm'
 import { PageSkeleton } from '@/components/shared/LoadingSkeleton'
 import type { Account } from '@/domain/account/Account'
 
-const ORG_ID = process.env.NEXT_PUBLIC_ORG_ID ?? ''
-
 export default function EditAccountPage({
   params,
 }: {
@@ -16,7 +14,7 @@ export default function EditAccountPage({
 }) {
   const { id } = use(params)
   const router = useRouter()
-  const { account, isLoading } = useAccount(id, ORG_ID)
+  const { account, isLoading } = useAccount(id)
 
   if (isLoading) return <PageSkeleton />
   if (!account) {

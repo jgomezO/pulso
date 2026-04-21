@@ -23,8 +23,6 @@ import type { Account } from '@/domain/account/Account'
 import { useUsers } from '@/hooks/useUsers'
 import { formatCurrency } from '@/lib/utils/format'
 
-const ORG_ID = process.env.NEXT_PUBLIC_ORG_ID ?? ''
-
 const TIER_OPTIONS = [
   { id: 'enterprise', label: 'Enterprise' },
   { id: 'growth',     label: 'Growth' },
@@ -132,7 +130,7 @@ function RenewalChip({ renewalDate }: { renewalDate: DateValue | null }) {
 // ── Main form ─────────────────────────────────────────────────────────────────
 export function AccountForm({ account, onSuccess }: AccountFormProps) {
   const router    = useRouter()
-  const { users } = useUsers(ORG_ID)
+  const { users } = useUsers()
   const isEdit    = !!account
 
   const [name,          setName]         = useState(account?.name ?? '')
@@ -169,7 +167,6 @@ export function AccountForm({ account, onSuccess }: AccountFormProps) {
     setIsSubmitting(true)
 
     const body = {
-      orgId:             ORG_ID,
       name:              name.trim(),
       domain:            domain || null,
       tier:              tier || null,

@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { createServiceClient } from '@/infrastructure/db/supabase'
+import { authenticateRequest } from '@/lib/supabase/apiAuth'
 
 const ImportRowSchema = z.object({
   name:        z.string().min(1),
@@ -13,21 +14,24 @@ const ImportRowSchema = z.object({
 })
 
 const ImportBodySchema = z.object({
-  orgId:          z.string().uuid(),
   rows:           z.array(ImportRowSchema).min(1).max(500),
   updateExisting: z.boolean().default(false),
 })
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await authenticateRequest()
+    if (!auth.ok) return Response.json({ error: auth.error }, { status: auth.status })
+
+    const orgId = auth.orgId
     const body   = await request.json()
     const parsed = ImportBodySchema.safeParse(body)
     if (!parsed.success) return Response.json({ error: parsed.error.flatten() }, { status: 400 })
 
-    const { orgId, rows, updateExisting } = parsed.data
+    const { rows, updateExisting } = parsed.data
     const db = createServiceClient()
 
-    // ── Resolve CSM emails → user IDs ──────────────────────────────────────
+    // Resolve CSM emails → user IDs
     const emailsNeeded = [...new Set(rows.map(r => r.csmEmail).filter(Boolean) as string[])]
     const emailToId: Record<string, string> = {}
 
@@ -40,9 +44,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ── Find existing accounts by domain for upsert ────────────────────────
+    // Find existing accounts by domain for upsert
     const domainsInBatch = rows.map(r => r.domain).filter(Boolean) as string[]
-    const existingByDomain: Record<string, string> = {} // domain → account id
+    const existingByDomain: Record<string, string> = {}
 
     if (domainsInBatch.length > 0) {
       const { data: existing } = await db
@@ -56,7 +60,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ── Process each row ──────────────────────────────────────────────────
+    // Process each row
     let imported = 0
     let updated  = 0
     const errors: { row: number; name: string; message: string }[] = []
@@ -78,7 +82,6 @@ export async function POST(request: NextRequest) {
       const existingId = row.domain ? existingByDomain[row.domain] : undefined
 
       if (existingId && updateExisting) {
-        // Update existing account
         const { error } = await db
           .from('accounts')
           .update(record)
@@ -90,7 +93,6 @@ export async function POST(request: NextRequest) {
           updated++
         }
       } else if (!existingId) {
-        // Insert new account
         const { error } = await db
           .from('accounts')
           .insert(record)
@@ -101,7 +103,6 @@ export async function POST(request: NextRequest) {
           imported++
         }
       }
-      // else: duplicate and updateExisting=false → skip silently
     }
 
     return Response.json({ imported, updated, errors })
