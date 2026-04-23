@@ -2,7 +2,7 @@
 
 import { use, useState } from 'react'
 import Link from 'next/link'
-import { Separator } from '@heroui/react'
+import { Separator, Button, Dropdown } from '@heroui/react'
 import { useAccount } from '@/hooks/useAccount'
 import { useHealthScore } from '@/hooks/useHealthScore'
 import { useAccountSummary } from '@/hooks/useAccountSummary'
@@ -12,7 +12,9 @@ import { PlansSection } from '@/components/accounts/PlansSection'
 import { ContactsSection } from '@/components/accounts/ContactsSection'
 import { HealthScoreDetail } from '@/components/accounts/HealthScoreDetail'
 import { CsmNotesSection } from '@/components/accounts/CsmNotesSection'
+import { HealthNarrativeCard } from '@/components/accounts/HealthNarrativeCard'
 import { MeetingBriefModal } from '@/components/accounts/MeetingBriefModal'
+import { EmailComposerModal } from '@/components/accounts/EmailComposerModal'
 import { NewGoogleMeetingModal } from '@/components/accounts/NewGoogleMeetingModal'
 import { SyncButtons } from '@/components/accounts/SyncButtons'
 import { AIInsightCard } from '@/components/shared/AIInsightCard'
@@ -20,7 +22,9 @@ import { PageSkeleton } from '@/components/shared/LoadingSkeleton'
 import { formatCurrency } from '@/lib/utils/format'
 import { formatDate, daysUntil } from '@/lib/utils/date'
 import { Icon } from '@/components/shared/Icon'
-import { IconTrendUp, IconTrendDown, IconTrendStable, IconChevronRight } from '@/lib/icons'
+import { IconTrendUp, IconTrendDown, IconTrendStable, IconChevronRight, IconAI, IconMoreActions, IconEmail, IconMeeting } from '@/lib/icons'
+import { CopilotDrawer } from '@/components/copilot/CopilotDrawer'
+import { useInsights } from '@/hooks/useInsights'
 
 const TIER_COLOR: Record<string, string> = {
   enterprise: 'bg-[#F0EEFF] text-[#6C4EF2]',
@@ -36,6 +40,9 @@ export default function AccountDetailPage({
 }) {
   const { id } = use(params)
   const [activeTab, setActiveTab] = useState<'timeline' | 'tasks' | 'plans'>('timeline')
+  const [isCopilotOpen, setIsCopilotOpen] = useState(false)
+  const [openModal, setOpenModal] = useState<'email' | 'meeting' | 'brief' | null>(null)
+  const { unreadCount: insightCount } = useInsights(id)
   const { account, contacts, isLoading, mutate } = useAccount(id)
   const { latest: healthRecord, previous } = useHealthScore(id)
   const { summary, isGenerating, generate } = useAccountSummary(id)
@@ -84,8 +91,36 @@ export default function AccountDetailPage({
                 </button>
               </Link>
               <SyncButtons account={account} onSynced={mutate} />
-              <NewGoogleMeetingModal accountId={id} contacts={contacts} />
-              <MeetingBriefModal account={account} contacts={contacts} />
+              <Dropdown>
+                <Dropdown.Trigger className="h-8 w-8 flex items-center justify-center bg-white border border-[#ECEEF5] text-[#6B7280] rounded-xl hover:border-[#4F6EF7] hover:text-[#4F6EF7] transition-colors cursor-pointer">
+                  <Icon icon={IconMoreActions} size={16} />
+                </Dropdown.Trigger>
+                <Dropdown.Popover placement="bottom end">
+                  <Dropdown.Menu onAction={(key) => setOpenModal(key as 'email' | 'meeting' | 'brief')}>
+                    <Dropdown.Item id="email">
+                      <span className="flex items-center gap-2">
+                        <Icon icon={IconEmail} size={14} />
+                        Componer email
+                      </span>
+                    </Dropdown.Item>
+                    <Dropdown.Item id="meeting">
+                      <span className="flex items-center gap-2">
+                        <Icon icon={IconMeeting} size={14} />
+                        Nueva reunion
+                      </span>
+                    </Dropdown.Item>
+                    <Dropdown.Item id="brief">
+                      <span className="flex items-center gap-2">
+                        <Icon icon={IconAI} size={14} />
+                        Brief de reunion
+                      </span>
+                    </Dropdown.Item>
+                  </Dropdown.Menu>
+                </Dropdown.Popover>
+              </Dropdown>
+              <EmailComposerModal accountId={id} contacts={contacts} isOpen={openModal === 'email'} onClose={() => setOpenModal(null)} />
+              <NewGoogleMeetingModal accountId={id} contacts={contacts} isOpen={openModal === 'meeting'} onClose={() => setOpenModal(null)} />
+              <MeetingBriefModal account={account} contacts={contacts} isOpen={openModal === 'brief'} onClose={() => setOpenModal(null)} />
             </div>
           </div>
 
@@ -212,6 +247,7 @@ export default function AccountDetailPage({
                 previousScore={previous?.score}
                 previousSignals={previous?.signals ?? null}
               />
+              <HealthNarrativeCard accountId={id} />
             </div>
 
             <Separator />
@@ -227,6 +263,40 @@ export default function AccountDetailPage({
           </div>
         </div>
       </div>
+
+      {/* Copilot FAB */}
+      <div className="fixed bottom-6 right-6 z-30">
+        <Button
+          isIconOnly
+          onPress={() => setIsCopilotOpen(true)}
+          className="w-12 h-12 rounded-full bg-[#4F6EF7] text-white shadow-lg"
+        >
+          <Icon icon={IconAI} size={24} />
+        </Button>
+        {insightCount > 0 && !isCopilotOpen && (
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center px-1 text-[10px] font-bold text-white bg-[#EF4444] rounded-full">
+            {insightCount > 9 ? '9+' : insightCount}
+          </span>
+        )}
+      </div>
+
+      {/* Copilot Drawer */}
+      <CopilotDrawer
+        accountId={id}
+        accountName={account.name}
+        isOpen={isCopilotOpen}
+        onClose={() => setIsCopilotOpen(false)}
+        account={{
+          riskLevel: account.riskLevel ?? null,
+          renewalDate: account.renewalDate ?? null,
+          healthScore: account.healthScore ?? null,
+          healthTrend: account.healthTrend ?? null,
+          contacts: contacts.map(c => ({
+            isChampion: c.isChampion ?? false,
+            lastContactedAt: c.lastContactedAt ?? null,
+          })),
+        }}
+      />
     </div>
   )
 }

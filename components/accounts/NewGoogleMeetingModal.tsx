@@ -14,6 +14,8 @@ import type { Contact } from '@/domain/contact/Contact'
 interface Props {
   accountId: string
   contacts: Contact[]
+  isOpen?: boolean
+  onClose?: () => void
 }
 
 interface CreatedEvent {
@@ -21,8 +23,9 @@ interface CreatedEvent {
   googleEventLink: string | null
 }
 
-export function NewGoogleMeetingModal({ accountId, contacts }: Props) {
-  const state = useOverlayState()
+export function NewGoogleMeetingModal({ accountId, contacts, isOpen, onClose }: Props) {
+  const controlled = isOpen !== undefined
+  const state = useOverlayState(controlled ? { isOpen, onOpenChange: (open) => { if (!open) onClose?.() } } : undefined)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [startDate, setStartDate] = useState<DateValue | null>(null)
@@ -137,10 +140,12 @@ export function NewGoogleMeetingModal({ accountId, contacts }: Props) {
 
   return (
     <>
-      <Button variant="secondary" onPress={handleOpen}>
-        <Icon icon={IconMeeting} size={16} />
-        <span className="ml-1">Nueva reunión</span>
-      </Button>
+      {!controlled && (
+        <Button variant="secondary" onPress={handleOpen}>
+          <Icon icon={IconMeeting} size={16} />
+          <span className="ml-1">Nueva reunión</span>
+        </Button>
+      )}
 
       <Modal.Root state={state}>
         <Modal.Backdrop isDismissable>

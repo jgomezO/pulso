@@ -11,10 +11,13 @@ import { formatDate } from '@/lib/utils/date'
 interface MeetingBriefModalProps {
   account: Account
   contacts: Contact[]
+  isOpen?: boolean
+  onClose?: () => void
 }
 
-export function MeetingBriefModal({ account, contacts }: MeetingBriefModalProps) {
-  const state = useOverlayState()
+export function MeetingBriefModal({ account, contacts, isOpen, onClose }: MeetingBriefModalProps) {
+  const controlled = isOpen !== undefined
+  const state = useOverlayState(controlled ? { isOpen, onOpenChange: (open) => { if (!open) onClose?.() } } : undefined)
   const [brief, setBrief] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -94,48 +97,51 @@ export function MeetingBriefModal({ account, contacts }: MeetingBriefModalProps)
 
   return (
     <>
-      <Button variant="secondary" onPress={handleOpen}>
-        Brief de reunión
-      </Button>
+      {!controlled && (
+        <Button variant="secondary" onPress={handleOpen}>
+          Brief de reunión
+        </Button>
+      )}
 
       <Modal.Root state={state}>
-        <Modal.Backdrop isDismissable />
-        <Modal.Container size="lg">
-          <Modal.Dialog>
-            <Modal.Header>
-              <div>
-                <p className="font-semibold">Brief de reunión</p>
-                <p className="text-sm font-normal text-gray-500">{account.name}</p>
-              </div>
-            </Modal.Header>
-            <Modal.Body>
-              {isStreaming && !brief && (
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <span className="animate-spin">⟳</span>
-                  Generando con AI...
+        <Modal.Backdrop isDismissable>
+          <Modal.Container size="lg" placement="center" scroll="inside">
+            <Modal.Dialog>
+              <Modal.Header>
+                <div>
+                  <p className="font-semibold">Brief de reunión</p>
+                  <p className="text-sm font-normal text-gray-500">{account.name}</p>
                 </div>
-              )}
-              <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans leading-relaxed">
-                {brief}
-                {isStreaming && (
-                  <span className="inline-block w-1 h-4 bg-blue-500 ml-0.5 animate-pulse align-text-bottom" />
+              </Modal.Header>
+              <Modal.Body>
+                {isStreaming && !brief && (
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <span className="animate-spin">⟳</span>
+                    Generando con AI...
+                  </div>
                 )}
-              </pre>
-            </Modal.Body>
-            <Modal.Footer>
-              <Button variant="ghost" onPress={handleClose}>
-                Cerrar
-              </Button>
-              <Button
-                variant="primary"
-                isDisabled={!brief || isStreaming}
-                onPress={handleCopy}
-              >
-                {copied ? '¡Copiado!' : 'Copiar al portapapeles'}
-              </Button>
-            </Modal.Footer>
-          </Modal.Dialog>
-        </Modal.Container>
+                <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans leading-relaxed">
+                  {brief}
+                  {isStreaming && (
+                    <span className="inline-block w-1 h-4 bg-blue-500 ml-0.5 animate-pulse align-text-bottom" />
+                  )}
+                </pre>
+              </Modal.Body>
+              <Modal.Footer>
+                <Button variant="ghost" onPress={handleClose}>
+                  Cerrar
+                </Button>
+                <Button
+                  variant="primary"
+                  isDisabled={!brief || isStreaming}
+                  onPress={handleCopy}
+                >
+                  {copied ? '¡Copiado!' : 'Copiar al portapapeles'}
+                </Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
       </Modal.Root>
     </>
   )
