@@ -98,10 +98,10 @@ export function NewPlanModal({ accountId, account, onCreated, onClose }: NewPlan
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4 cursor-pointer"
       onClick={e => { if (e.target === overlayRef.current) onClose() }}
     >
-      <div className="bg-white rounded-[14px] border border-[#ECEEF5] w-full max-w-lg">
+      <div className="bg-white rounded-[14px] border border-[#ECEEF5] w-full max-w-lg cursor-default">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#ECEEF5]">
           <div className="flex items-center gap-2">

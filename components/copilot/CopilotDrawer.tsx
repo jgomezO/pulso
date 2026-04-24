@@ -223,7 +223,7 @@ export function CopilotDrawer({ accountId, accountName, isOpen, onClose, account
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/20 z-40 lg:hidden" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/20 z-40 lg:hidden cursor-pointer" onClick={onClose} />
 
       <div className="fixed top-0 right-0 h-full w-full sm:w-[400px] bg-white border-l border-[#ECEEF5] z-50 flex flex-col animate-in slide-in-from-right duration-200">
         {/* Header */}
@@ -372,7 +372,7 @@ export function CopilotDrawer({ accountId, accountName, isOpen, onClose, account
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Pregunta sobre esta cuenta..."
-              className="flex-1 h-9 px-3 text-sm rounded-xl border border-[#ECEEF5] bg-white text-[#0F1117] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-1 focus:ring-[#4F6EF7] focus:border-[#4F6EF7] disabled:opacity-50"
+              className="flex-1 h-9 px-3 text-sm rounded-xl border border-[#ECEEF5] bg-white text-[#0F1117] placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#4F6EF7] disabled:opacity-50"
               disabled={isStreaming}
             />
             <Button isIconOnly size="sm" onPress={handleSend}

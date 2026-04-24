@@ -9,3 +9,19 @@ body {
 * {
   box-sizing: border-box;
 }
+
+/* All clickable elements should show pointer cursor */
+@layer base {
+  button,
+  [role="button"],
+  a,
+  summary {
+    cursor: pointer;
+  }
+}
+
+/* Remove HeroUI default box-shadow on all form fields */
+:root {
+  --field-shadow: 0 0 0 0 transparent;
+  --surface-shadow: 0 0 0 0 transparent;
+}

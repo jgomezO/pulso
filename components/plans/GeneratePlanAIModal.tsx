@@ -238,10 +238,10 @@ export function GeneratePlanAIModal({
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4 cursor-pointer"
       onClick={e => { if (e.target === overlayRef.current) onClose() }}
     >
-      <div className={`bg-white rounded-[14px] border border-[#ECEEF5] w-full transition-[max-width] duration-200 max-h-[90vh] flex flex-col ${isWide ? 'max-w-3xl' : 'max-w-lg'}`}>
+      <div className={`bg-white rounded-[14px] border border-[#ECEEF5] w-full transition-[max-width] duration-200 max-h-[90vh] flex flex-col cursor-default ${isWide ? 'max-w-3xl' : 'max-w-lg'}`}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#ECEEF5] flex-shrink-0">
           <div className="flex items-center gap-2">
@@ -271,7 +271,7 @@ export function GeneratePlanAIModal({
               className="w-full"
             >
               <Label className="block text-sm font-medium text-[#0F1117] mb-1">Tipo de plan</Label>
-              <Select.Trigger className="w-full flex items-center justify-between border border-[#ECEEF5] rounded-xl px-3 py-2 text-sm bg-white hover:border-[#4F6EF7]/40 transition-colors focus:outline-none focus:ring-2 focus:ring-[#4F6EF7]">
+              <Select.Trigger className="w-full flex items-center justify-between border border-[#ECEEF5] rounded-xl px-3 py-2 text-sm bg-white hover:border-[#4F6EF7]/40 transition-colors focus:outline-none focus:border-[#4F6EF7]">
                 <Select.Value>{({ isPlaceholder }: { isPlaceholder: boolean }) => isPlaceholder ? 'Seleccionar tipo' : undefined}</Select.Value>
                 <Select.Indicator />
               </Select.Trigger>
@@ -289,7 +289,7 @@ export function GeneratePlanAIModal({
               <TextArea
                 placeholder="Ej: El cliente mencionó que está evaluando competidores, enfocarse en demostrar valor rápido..."
                 rows={3}
-                className="w-full px-3 py-2 border border-[#ECEEF5] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#4F6EF7] resize-none placeholder:text-[#9CA3AF]"
+                className="w-full px-3 py-2 border border-[#ECEEF5] rounded-xl text-sm focus:outline-none focus:border-[#4F6EF7] resize-none placeholder:text-[#9CA3AF]"
               />
             </TextField>
 
@@ -353,7 +353,7 @@ export function GeneratePlanAIModal({
             <div className="flex items-start gap-3">
               <div className="flex-1">
                 <TextField value={editTitle} onChange={setEditTitle} className="w-full">
-                  <Input className="w-full text-base font-semibold text-[#0F1117] border border-[#ECEEF5] rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#4F6EF7]" />
+                  <Input className="w-full text-base font-semibold text-[#0F1117] border border-[#ECEEF5] rounded-xl px-3 py-2 focus:outline-none focus:border-[#4F6EF7]" />
                 </TextField>
               </div>
               {planType && TYPE_COLORS[planType] && (
@@ -368,7 +368,7 @@ export function GeneratePlanAIModal({
               <Label className="block text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider mb-1">Objetivo</Label>
               <TextArea
                 rows={2}
-                className="w-full px-3 py-2 border border-[#ECEEF5] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#4F6EF7] resize-none"
+                className="w-full px-3 py-2 border border-[#ECEEF5] rounded-xl text-sm focus:outline-none focus:border-[#4F6EF7] resize-none"
               />
             </TextField>
 

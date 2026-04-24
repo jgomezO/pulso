@@ -110,9 +110,9 @@ export function ContactModal({ accountId, contact, onSaved, onClose }: ContactMo
     <div
       ref={overlayRef}
       onClick={handleOverlayClick}
-      className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4 cursor-pointer"
     >
-      <div className="bg-white rounded-[14px] border border-[#ECEEF5] w-full max-w-md">
+      <div className="bg-white rounded-[14px] border border-[#ECEEF5] w-full max-w-md cursor-default">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#ECEEF5]">
           <h2 className="text-sm font-semibold text-[#0F1117]">
